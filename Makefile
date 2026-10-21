@@ -6,7 +6,9 @@ export BENCH_PG_PORT BENCH_PG_PASSWORD BENCH_DSN
 GO_ARCH   := $(shell go env GOARCH)
 HOST_ARCH := $(shell uname -m | sed -e 's/x86_64/amd64/' -e 's/aarch64/arm64/')
 
-.PHONY: arch-check db-up db-down db-reset db-seed db-check build vet test test-db
+BENCH_ARGS ?=
+
+.PHONY: arch-check db-up db-down db-reset db-seed db-check build vet test test-db bench bench-cmp
 
 arch-check:
 	@if [ "$(GO_ARCH)" != "$(HOST_ARCH)" ]; then \
@@ -39,4 +41,10 @@ test:
 	env -u BENCH_DSN go test ./...
 
 test-db: db-up
-	go test -count=1 -run Integration ./...
+	go test -p 1 -count=1 -run Integration ./... # one package at a time: they all reseed the same DB
+
+bench: arch-check db-up
+	go run ./cmd/bench $(BENCH_ARGS)
+
+bench-cmp:
+	go run ./cmd/benchcmp $(A) $(B)
