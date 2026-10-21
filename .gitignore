@@ -1,0 +1,23 @@
+# Go build output and test artifacts
+/bin/
+*.test
+*.out
+coverage.*
+
+# Benchmark results (generated; fixtures live under testdata/)
+/results/
+
+# Local environment overrides
+.env
+.env.*
+
+# Editor / OS
+.idea/
+.vscode/
+.DS_Store
+
+# Tool state
+.remember/
+graphify-out/cache/
+graphify-out/.graphify_*
+graphify-out/cost.json
