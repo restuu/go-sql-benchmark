@@ -15,7 +15,13 @@ import (
 	"time"
 
 	"github.com/restuu/go-sql-benchmark/internal/adapters/databasesql"
+	"github.com/restuu/go-sql-benchmark/internal/adapters/ent"
+	"github.com/restuu/go-sql-benchmark/internal/adapters/gorm"
+	"github.com/restuu/go-sql-benchmark/internal/adapters/jet"
+	"github.com/restuu/go-sql-benchmark/internal/adapters/sqlc"
+	"github.com/restuu/go-sql-benchmark/internal/adapters/sqlx"
 	"github.com/restuu/go-sql-benchmark/internal/bench"
+	"github.com/restuu/go-sql-benchmark/internal/correctness"
 	"github.com/restuu/go-sql-benchmark/internal/result"
 	"github.com/restuu/go-sql-benchmark/internal/runner"
 	"github.com/restuu/go-sql-benchmark/internal/seedcheck"
@@ -25,12 +31,32 @@ const (
 	checkTimeout   = 10 * time.Second
 	exitUsageError = 2
 	exitRunError   = 1
-	pgxModulePath  = "github.com/jackc/pgx/v5"
+	// preflightPool is the connection pool of each adapter during the correctness check.
+	preflightPool = 2
+	// preflightTimeout bounds the whole correctness check: its reseeds wait for table locks, so a
+	// connection left open mid-transaction by a misbehaving adapter would otherwise hang the run.
+	preflightTimeout = 2 * time.Minute
 )
 
-// registry maps -libs names to adapter constructors; Phase 3 adapters register here.
+// registry maps -libs names to adapter constructors; new adapters register here.
 var registry = map[string]func() bench.Adapter{
 	"database_sql": databasesql.New,
+	"ent":          ent.New,
+	"gorm":         gorm.New,
+	"jet":          jet.New,
+	"sqlc":         sqlc.New,
+	"sqlx":         sqlx.New,
+}
+
+// libraryModules maps the library names recorded in the result host info to the Go module whose
+// version is read from the binary. sqlc is generated code with no runtime module (its generator
+// version is pinned in tools/go.mod).
+var libraryModules = map[string]string{
+	"pgx":  "github.com/jackc/pgx/v5",
+	"sqlx": "github.com/jmoiron/sqlx",
+	"gorm": "gorm.io/gorm",
+	"ent":  "entgo.io/ent",
+	"jet":  "github.com/go-jet/jet/v2",
 }
 
 func main() {
@@ -84,12 +110,17 @@ func run(cfg config, dsn string) error {
 		return err
 	}
 
+	store := runner.NewPGStore(db)
+	if err := preflight(ctx, dsn, store, cfg.libs); err != nil {
+		return err
+	}
+
 	factories := make([]func() bench.Adapter, len(cfg.libs))
 	for i, name := range cfg.libs {
 		factories[i] = registry[name]
 	}
 	fmt.Fprintf(os.Stderr, "bench: seed %d, %d repeats\n", cfg.seed, cfg.repeats)
-	run, err := runner.Run(ctx, runner.NewPGStore(db), runner.Options{
+	run, err := runner.Run(ctx, store, runner.Options{
 		DSN: dsn, Adapters: factories, Scenarios: cfg.scenarios, Profiles: cfg.profiles,
 		Repeats: cfg.repeats, Seed: cfg.seed, Progress: os.Stderr,
 	}, host)
@@ -108,8 +139,44 @@ func hostInfo(ctx context.Context, db *sql.DB) (result.Host, error) {
 		GOOS: runtime.GOOS, GOARCH: runtime.GOARCH, GoVersion: runtime.Version(),
 		NumCPU: runtime.NumCPU(), GOMAXPROCS: runtime.GOMAXPROCS(0),
 		PostgresVersion: pgVersion,
-		Libraries:       map[string]string{"pgx": moduleVersion(pgxModulePath)},
+		Libraries:       libraryVersions(),
 	}, nil
+}
+
+func libraryVersions() map[string]string {
+	versions := make(map[string]string, len(libraryModules))
+	for lib, path := range libraryModules {
+		versions[lib] = moduleVersion(path)
+	}
+	return versions
+}
+
+// preflight checks that the selected libraries return the same values as the database/sql
+// reference before any time is spent measuring them. It reseeds the database when done.
+func preflight(ctx context.Context, dsn string, store runner.Store, libs []string) error {
+	ctx, cancel := context.WithTimeout(ctx, preflightTimeout)
+	defer cancel()
+	pool := bench.PoolConfig{MaxOpen: preflightPool, MaxIdle: preflightPool}
+	ref := databasesql.New()
+	adapters := []bench.Adapter{ref}
+	subjects := make([]bench.Adapter, 0, len(libs))
+	for _, name := range libs {
+		a := registry[name]()
+		adapters = append(adapters, a)
+		subjects = append(subjects, a)
+	}
+	defer func() {
+		for _, a := range adapters {
+			_ = a.Close()
+		}
+	}()
+	for _, a := range adapters {
+		if err := a.Init(ctx, dsn, pool); err != nil {
+			return fmt.Errorf("bench: preflight: init %s: %w", a.Name(), err)
+		}
+	}
+	fmt.Fprintf(os.Stderr, "bench: checking %d libraries against database_sql\n", len(subjects))
+	return correctness.Check(ctx, store, ref, subjects)
 }
 
 // moduleVersion returns the version of a dependency linked into this binary, or "unknown".
