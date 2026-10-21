@@ -1,0 +1,15 @@
+{
+  "weights": {"p95": 1, "bytes_per_op": 1, "cpu_ns_per_op": 1},
+  "methodology": [
+    "Fixture methodology line one.",
+    "Fixture methodology line two with a | pipe."
+  ],
+  "libraries": [
+    {"name": "database_sql", "display": "database/sql", "version_used": "standard library", "pros": ["Reference implementation."], "cons": ["Hand-written scanning."]},
+    {"name": "ent", "display": "ent", "module": "ent", "version_used": "v0.14.6", "pros": ["Typed graph API."], "cons": []},
+    {"name": "sqlx", "display": "sqlx", "module": "sqlx", "label": "no updates since 2024", "version_used": "v1.4.0", "pros": [], "cons": ["Unmaintained."]}
+  ],
+  "cell_notes": [
+    {"library": "ent", "scenario": "join", "note": "ent JOIN is edge eager-loading: two queries, not one SQL JOIN."}
+  ]
+}
