@@ -6,7 +6,9 @@ export BENCH_PG_PORT BENCH_PG_PASSWORD BENCH_DSN
 GO_ARCH   := $(shell go env GOARCH)
 HOST_ARCH := $(shell uname -m | sed -e 's/x86_64/amd64/' -e 's/aarch64/arm64/')
 
-.PHONY: arch-check db-up db-down db-reset db-seed db-check build vet test test-db
+BENCH_ARGS ?=
+
+.PHONY: arch-check db-up db-down db-reset db-seed db-check build vet test test-db bench bench-cmp gen gen-sqlc gen-ent gen-jet gen-check
 
 arch-check:
 	@if [ "$(GO_ARCH)" != "$(HOST_ARCH)" ]; then \
@@ -39,4 +41,33 @@ test:
 	env -u BENCH_DSN go test ./...
 
 test-db: db-up
-	go test -count=1 -run Integration ./...
+	go test -p 1 -count=1 -run Integration ./... # one package at a time: they all reseed the same DB
+
+bench: arch-check db-up
+	go run ./cmd/bench $(BENCH_ARGS)
+
+bench-cmp:
+	go run ./cmd/benchcmp $(A) $(B)
+
+# Code generators are pinned in tools/go.mod (tool directives) so the main go.mod stays free of them.
+GOTOOL   := go tool -modfile=tools/go.mod
+GEN_DIRS := internal/adapters/sqlc/db internal/adapters/ent/entgen internal/adapters/jet/gen
+
+gen: gen-sqlc gen-ent gen-jet
+
+gen-sqlc:
+	$(GOTOOL) sqlc generate -f internal/adapters/sqlc/sqlc.yaml
+
+gen-ent:
+	$(GOTOOL) ent generate --target internal/adapters/ent/entgen ./internal/adapters/ent/schema
+
+# jet reads the live schema, so the database must be up.
+gen-jet: db-up
+	$(GOTOOL) jet -source=postgres -dsn='$(BENCH_DSN)' -path=internal/adapters/jet/gen
+
+# Fails if regenerating changes any generated file in the working tree (commit the result to pin it).
+gen-check:
+	@sum() { find $(GEN_DIRS) -type f 2>/dev/null | sort | xargs shasum 2>/dev/null; }; \
+	before=$$(sum); $(MAKE) --no-print-directory gen; after=$$(sum); \
+	if [ "$$before" != "$$after" ]; then echo "generated code drifted: commit the regenerated files"; exit 1; fi; \
+	echo "generated code up to date"

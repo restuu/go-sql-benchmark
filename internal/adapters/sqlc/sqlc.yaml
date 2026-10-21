@@ -1,0 +1,12 @@
+# Derived in part from github.com/efectn/go-orm-benchmarks (MIT), see LICENSE.
+# database/sql (not pgx/v5) so the generated code runs on the pooled *sql.DB over pgx/stdlib.
+version: "2"
+sql:
+  - engine: "postgresql"
+    schema: "../../../db/schema.sql"
+    queries: "queries.sql"
+    gen:
+      go:
+        package: "db"
+        sql_package: "database/sql"
+        out: "db"
