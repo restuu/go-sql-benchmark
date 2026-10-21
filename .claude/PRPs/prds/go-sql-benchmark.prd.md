@@ -133,7 +133,7 @@ Core 6 libraries x 6 scenarios x 2 profiles, JSON results, generated README with
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 |---|-------|-------------|--------|----------|---------|----------|
 | 1 | Foundation | Module on Go 1.27.3, Postgres 15 compose, schema/seed, arch check, Makefile, LICENSE attribution, CLAUDE.md | complete | - | - | [foundation.plan.md](../plans/completed/foundation.plan.md), [report](../reports/foundation-report.md) |
-| 2 | Runner & reference adapter | `Adapter` interface, low/stress profiles, metrics capture, JSON output, `database/sql` adapter for all 6 scenarios | in-progress | - | 1 | [runner-and-reference-adapter.plan.md](../plans/runner-and-reference-adapter.plan.md) |
+| 2 | Runner & reference adapter | `Adapter` interface, low/stress profiles, metrics capture, JSON output, `database/sql` adapter for all 6 scenarios | complete | - | 1 | [plan](../plans/completed/runner-and-reference-adapter.plan.md), [report](../reports/runner-and-reference-adapter-report.md) (p95 stability not met on this machine; recorded) |
 | 3 | Core adapters | sqlc, sqlx, gorm, ent, go-jet for all scenarios + cross-adapter correctness check | pending | with 4 | 2 | - |
 | 4 | Report generator | JSON -> README: tables, delta vs baseline, top-5 reasoning, pros/cons from data + rubric file | pending | with 3 | 2 | - |
 | 5 | Full run & publish | Full run on reference machine, stability check (2 runs), commit README | pending | - | 3, 4 | - |
