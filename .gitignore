@@ -18,7 +18,4 @@ coverage.*
 
 # Tool state
 .remember/
-graphify-out/cache/
-graphify-out/.graphify_*
-graphify-out/cost.json
-graphify-out/20*/
+graphify-out/
