@@ -8,7 +8,7 @@ HOST_ARCH := $(shell uname -m | sed -e 's/x86_64/amd64/' -e 's/aarch64/arm64/')
 
 BENCH_ARGS ?=
 
-.PHONY: arch-check db-up db-down db-reset db-seed db-check build vet test test-db bench bench-cmp
+.PHONY: arch-check db-up db-down db-reset db-seed db-check build vet test test-db bench bench-cmp gen gen-sqlc gen-ent gen-jet gen-check
 
 arch-check:
 	@if [ "$(GO_ARCH)" != "$(HOST_ARCH)" ]; then \
@@ -48,3 +48,26 @@ bench: arch-check db-up
 
 bench-cmp:
 	go run ./cmd/benchcmp $(A) $(B)
+
+# Code generators are pinned in tools/go.mod (tool directives) so the main go.mod stays free of them.
+GOTOOL   := go tool -modfile=tools/go.mod
+GEN_DIRS := internal/adapters/sqlc/db internal/adapters/ent/entgen internal/adapters/jet/gen
+
+gen: gen-sqlc gen-ent gen-jet
+
+gen-sqlc:
+	$(GOTOOL) sqlc generate -f internal/adapters/sqlc/sqlc.yaml
+
+gen-ent:
+	$(GOTOOL) ent generate --target internal/adapters/ent/entgen ./internal/adapters/ent/schema
+
+# jet reads the live schema, so the database must be up.
+gen-jet: db-up
+	$(GOTOOL) jet -source=postgres -dsn='$(BENCH_DSN)' -path=internal/adapters/jet/gen
+
+# Fails if regenerating changes any generated file in the working tree (commit the result to pin it).
+gen-check:
+	@sum() { find $(GEN_DIRS) -type f 2>/dev/null | sort | xargs shasum 2>/dev/null; }; \
+	before=$$(sum); $(MAKE) --no-print-directory gen; after=$$(sum); \
+	if [ "$$before" != "$$after" ]; then echo "generated code drifted: commit the regenerated files"; exit 1; fi; \
+	echo "generated code up to date"
