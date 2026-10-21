@@ -1,0 +1,68 @@
+{
+  "cmd/dbcheck/main.go": {
+    "mtime": 1792551097.3002646,
+    "seen": 1792551712.584248,
+    "ast_hash": "0cbc02f7bfbe2eb79f45c43a45ad3ff4",
+    "semantic_hash": "0cbc02f7bfbe2eb79f45c43a45ad3ff4"
+  },
+  "db/schema.sql": {
+    "mtime": 1792551075.6787744,
+    "seen": 1792551712.584251,
+    "ast_hash": "3e1cdfc8103419dfd6328f48379e6bdb",
+    "semantic_hash": "3e1cdfc8103419dfd6328f48379e6bdb"
+  },
+  "db/seed.sql": {
+    "mtime": 1792551075.68195,
+    "seen": 1792551712.5842528,
+    "ast_hash": "9892e2f5025281687c69b42145e8af12",
+    "semantic_hash": "9892e2f5025281687c69b42145e8af12"
+  },
+  "go.mod": {
+    "mtime": 1792551097.3630595,
+    "seen": 1792551712.584254,
+    "ast_hash": "547f911fefa7d808e34c0ccf272b2090",
+    "semantic_hash": "547f911fefa7d808e34c0ccf272b2090"
+  },
+  "internal/seedcheck/seedcheck.go": {
+    "mtime": 1792551106.7745774,
+    "seen": 1792551712.584255,
+    "ast_hash": "a64fb049b837435745ea0cb93d7f91e5",
+    "semantic_hash": "a64fb049b837435745ea0cb93d7f91e5"
+  },
+  "internal/seedcheck/seedcheck_test.go": {
+    "mtime": 1792551085.851174,
+    "seen": 1792551712.584256,
+    "ast_hash": "dc7b6cd4d26f6461840f24e2c93a8900",
+    "semantic_hash": "dc7b6cd4d26f6461840f24e2c93a8900"
+  },
+  ".claude/PRPs/plans/completed/foundation.plan.md": {
+    "mtime": 1792551025.0795295,
+    "seen": 1792551712.584256,
+    "ast_hash": "ef0125d4c75b7866ecef2283bf9e6a0c",
+    "semantic_hash": "ef0125d4c75b7866ecef2283bf9e6a0c"
+  },
+  ".claude/PRPs/prds/go-sql-benchmark.prd.md": {
+    "mtime": 1792551174.6362736,
+    "seen": 1792551712.5842571,
+    "ast_hash": "34b3a1386084779a5140b5101a03e408",
+    "semantic_hash": "34b3a1386084779a5140b5101a03e408"
+  },
+  ".claude/PRPs/reports/foundation-report.md": {
+    "mtime": 1792551163.916093,
+    "seen": 1792551712.584258,
+    "ast_hash": "19d0a5fe8a4df7dfad77d858585e7e2a",
+    "semantic_hash": "19d0a5fe8a4df7dfad77d858585e7e2a"
+  },
+  "CLAUDE.md": {
+    "mtime": 1792551147.6924446,
+    "seen": 1792551712.584259,
+    "ast_hash": "835e4f280a044153f4704f4cbad9add3",
+    "semantic_hash": "835e4f280a044153f4704f4cbad9add3"
+  },
+  "docker-compose.yml": {
+    "mtime": 1792551075.6851213,
+    "seen": 1792551712.58426,
+    "ast_hash": "d30a1db9303a28fa53a398f3757bb62e",
+    "semantic_hash": "d30a1db9303a28fa53a398f3757bb62e"
+  }
+}
