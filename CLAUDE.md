@@ -10,6 +10,7 @@ Postgres 15. Numbers are only comparable on the same machine. Plan and PRD: `.cl
 - `make db-check` — verify Postgres major + row counts (`cmd/dbcheck`)
 - `make build | vet | test` — `test` strips `BENCH_DSN`, so DB integration tests skip
 - `make test-db` — brings the DB up and runs the `Integration` tests
+- `make gen | gen-sqlc | gen-ent | gen-jet` — regenerate committed sqlc/ent/jet code with tools pinned in `tools/go.mod` (`go tool -modfile=tools/go.mod`); `gen-jet` reads the live schema so it brings the DB up. `make gen-check` fails if regenerating changes any file.
 - `make bench BENCH_ARGS="..."` — arch check, DB up, run the matrix, write `results/run-<UTC>.json` (`go run ./cmd/bench -h` lists flags); reseeds the DB on success
 - `make bench-cmp A=results/a.json B=results/b.json` — per-cell p95 deviation; exit 1 beyond `-tolerance` (default 0.10)
 
@@ -21,16 +22,24 @@ Postgres 15. Numbers are only comparable on the same machine. Plan and PRD: `.cl
 - A scenario a library cannot express is "n/a (raw SQL fallback)" and is excluded from rankings.
 
 ## Layout
-- `db/` — `schema.sql` + `seed.sql`, the single source of truth (sqlc reads it in Phase 3). Row counts live in `internal/seedcheck.ExpectedRows`; change both together.
+- `db/` — `schema.sql` + `seed.sql`, the single source of truth (sqlc reads it; jet generates from the live DB it seeds). Row counts live in `internal/seedcheck.ExpectedRows`; change both together.
 - `internal/` — packages; `cmd/` — binaries.
-- `internal/bench` adapter contract + profiles; `internal/runner` matrix, cells, stats, reseed store; `internal/result` JSON schema v1 (the Phase 4 contract); `internal/adapters/<lib>` one package per library, registered in `cmd/bench` `registry`.
+- `internal/bench` adapter contract + profiles; `internal/runner` matrix, cells, stats, reseed store; `internal/result` JSON schema v1 (the Phase 4 contract); `internal/adapters/<lib>` one package per library (`databasesql`, `sqlx`, `sqlc`, `gorm`, `ent`, `jet`), registered in `cmd/bench` `registry`; generated code lives in `sqlc/db`, `ent/entgen` (from `ent/schema`) and `jet/gen`. `internal/adaptertest` is the shared integration contract each adapter test calls; `internal/correctness` is the cross-adapter value check. `tools/` is a separate module holding the codegen tools.
 
 ## Runner
 - Adapter contract: one method per scenario returning rows affected/scanned (runner checks 1/1/1/1/10/40 and counts a mismatch as an error); reads must scan every selected column; no explicit `Prepare`; return `bench.ErrUnsupported` for a scenario the library cannot express (cell becomes `na`); `Init` must work again after `Close`.
 - Per cell: reseed, probe once, reseed, fresh pool of `workers` conns, warm-up, measured window. Library order is shuffled per repeat from the recorded seed; per-cell result is the median of `-repeats` (default 3).
 - Metrics: latency = per-call service time of successful ops (exact nearest-rank p50/p95/p99, not coordinated-omission-corrected); throughput = ops / wall clock; B/op, allocs/op, CPU ns/op = window deltas (`MemStats`, `getrusage`) / ops and include harness and GC cost (harness floor about 0 allocs/op).
 - Profiles (flags override, effective values stored in the JSON): low = 4 workers, 10 ms pacing, 1 s warm-up, 5 s window; stress = 100 workers, unpaced, 2 s warm-up, 10 s window, 400k pre-inserted DELETE ids (window ends early if exhausted).
-- Value-level cross-adapter correctness is not checked yet (Phase 3); only row counts.
+- Value-level correctness: adapters also implement `bench.Verifier` (`ReadModel`, `ReadJoin`, `ReadUnion` return values through the same library query as the benchmarked method; an unsupported scenario returns `ErrUnsupported` on both). `internal/correctness.Check` compares them with the `database_sql` reference (itself checked against golden values from the seed) and replays INSERT/UPDATE/DELETE with a distinctive model (`Right` false). It runs as a pre-flight in `cmd/bench` before every matrix and aborts on any mismatch. Adapter queries have no `ORDER BY`; the check sorts.
+- Write semantics every adapter must keep: UPDATE or DELETE of a missing id affects 0 rows (gorm `Save` and ent `UpdateOneID` would not), SELECT of a missing id errors, UPDATE writes every column including zero values.
+
+## Adapter notes (carry into the Phase 4 report)
+- Native rule: a scenario is supported if the library's own query API (or, for SQL-first sqlc/sqlx, its SQL) expresses it; needing the raw-SQL escape hatch means `na`. Current `na`: gorm UNION, ent UNION. Every other cell is measured.
+- **ent JOIN is edge eager-loading** (`WithCustomer()`): two queries (orders, then their customers), not one SQL JOIN. The report must say so next to ent's JOIN numbers.
+- gorm uses `SkipDefaultTransaction` (otherwise every write is wrapped in a transaction), `Joins("Customer")` for JOIN, `Updates` with an explicit column list.
+- Reads use each library's idiomatic result handling (sqlx/sqlc/gorm/ent/jet materialise rows; the reference scans into locals), so allocs/op differences include that.
+- `lib/pq` is linked into the binary (go-jet array literals; ent's generated `migrate` package via atlas) but registers an unused "postgres" driver only; no adapter uses it. All adapters open `sql.Open("pgx", dsn)`.
 
 ## Knowledge graph (graphify)
 - `graphify-out/` holds the graph of code + `.claude/PRPs/` docs (`GRAPH_REPORT.md`, `graph.html`, `graph.json`). For architecture or "how does X relate to Y" questions, check `GRAPH_REPORT.md` or run `graphify query "<question>"`, `graphify path "A" "B"`, `graphify explain "X"` before grepping.
