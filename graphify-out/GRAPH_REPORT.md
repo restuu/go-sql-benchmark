@@ -6,12 +6,12 @@
 - Unclassified: 4 file(s) not represented in the graph (top: (none) 4)
 
 ## Summary
-- 1895 nodes · 5068 edges · 99 communities (64 shown, 35 thin omitted)
+- 1894 nodes · 5071 edges · 92 communities (57 shown, 35 thin omitted)
 - Extraction: 91% EXTRACTED · 9% INFERRED · 0% AMBIGUOUS · INFERRED: 466 edges (avg confidence: 0.88)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `609bd83c`
+- Built from commit: `2e7af1b8`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -25,10 +25,10 @@
 - Metrics and Reporting Design
 - efectn/go-orm-benchmarks (upstream)
 - Go Module
-- result_test.go
+- Run
 - fakeAdapter
 - testing.T
-- flags.go
+- runCell
 - Run
 - order/where.go
 - Plan: Runner & Reference Adapter (Go SQL Benchmark, Phase 2)
@@ -49,7 +49,7 @@
 - OrderUpdateOne
 - CustomerUpdateOne
 - ModelCreate
-- go_pkg_time
+- Adapter
 - OrderMutation
 - Plan: Core adapters (sqlc, sqlx, gorm, ent, go-jet) + cross-adapter correctness
 - CustomerMutation
@@ -66,8 +66,8 @@
 - Adapter
 - OrderClient
 - client.go
-- NewModel
-- orderRow
+- Step-by-Step Tasks
+- fakeLib
 - config
 - CustomerClient
 - Customer
@@ -89,21 +89,12 @@
 - customer/customer.go
 - order/order.go
 - newOrderMutation
-- Files to Change
 - Model
 - .sqlSave
 - .Mutate
 - withHooks
-- Adapter
 - scanWithInterceptors
-- writes.go
-- result.go
 - github.com/restuu/go-sql-benchmark/tools
-- fakeAdapter
-- Step-by-Step Tasks
-- Validation Commands
-- migrateSchema
-- stats_test.go
 
 ## God Nodes (most connected - your core abstractions)
 1. `Model` - 92 edges
@@ -118,6 +109,8 @@
 10. `Adapter` - 42 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `Summary` --references--> `Adapter`  [INFERRED]
+  .claude/PRPs/plans/completed/core-adapters.plan.md → internal/bench/bench.go
 - `Notes` --references--> `Verifier`  [INFERRED]
   .claude/PRPs/plans/completed/core-adapters.plan.md → internal/bench/verify.go
 - `Problem → Solution` --references--> `Verifier`  [INFERRED]
@@ -126,8 +119,6 @@
   .claude/PRPs/plans/completed/core-adapters.plan.md → internal/bench/verify.go
 - `Task 12: Documentation` --references--> `Verifier`  [INFERRED]
   .claude/PRPs/plans/completed/core-adapters.plan.md → internal/bench/verify.go
-- `Acceptance Criteria` --references--> `Check()`  [INFERRED]
-  .claude/PRPs/plans/completed/core-adapters.plan.md → internal/correctness/correctness.go
 
 ## Import Cycles
 - None detected.
@@ -137,7 +128,11 @@
 - **Controls that keep library comparison fair** — _claude_prps_prds_go_sql_benchmark_prd_pgx_stdlib_shared_driver, _claude_prps_prds_go_sql_benchmark_prd_arch_guard, _claude_prps_prds_go_sql_benchmark_prd_measurement_hygiene, _claude_prps_prds_go_sql_benchmark_prd_na_raw_sql_fallback, _claude_prps_prds_go_sql_benchmark_prd_cross_adapter_correctness_check [INFERRED 0.85]
 - **Seeded database creation and verification flow** — docker_compose_init_scripts_mount, db_schema, db_seed, _claude_prps_plans_completed_foundation_plan_seedcheck_package, _claude_prps_plans_completed_foundation_plan_dbcheck_cli [INFERRED 0.85]
 
-## Communities (99 total, 35 thin omitted)
+## Communities (92 total, 35 thin omitted)
+
+### Community 0 - "bench/main.go"
+Cohesion: 0.11
+Nodes (9): format(), main(), run(), compareCell(), Deviation, relativeDiff(), Suppliers, Config (+1 more)
 
 ### Community 1 - "Phase 2: Runner and reference adapter"
 Cohesion: 0.22
@@ -167,41 +162,41 @@ Nodes (4): Cross-adapter correctness check, Metrics per cell (p50/p95/p99, throu
 Cohesion: 0.19
 Nodes (10): MIT LICENSE with upstream attribution, Task 1: Go module and pgx dependency, db/schema.sql design (models, customers, suppliers, orders), Adapter interface (one method per scenario), Benchmark scenarios (INSERT, UPDATE, DELETE, SELECT, JOIN, UNION), sqlc and ent pinned via go tool directives, Core six libraries (database/sql, sqlc, sqlx, gorm, ent, go-jet), efectn/go-orm-benchmarks (upstream) (+2 more)
 
-### Community 9 - "result_test.go"
-Cohesion: 0.39
-Nodes (11): writeFile(), CompareP95(), Run, runWithP95(), TestCompareP95(), TestCompareP95Delta(), TestLoadErrors(), TestValidate() (+3 more)
+### Community 9 - "Run"
+Cohesion: 0.16
+Nodes (23): Task 3: Result format, validation, compare, Unit Tests, Code review (`ecc:go-reviewer`): 0 CRITICAL, 2 HIGH, 6 MEDIUM, 9 LOW, main(), run(), TestRun(), writeRun(), TestScenarioExpectedRows() (+15 more)
 
 ### Community 10 - "fakeAdapter"
-Cohesion: 0.12
-Nodes (10): cpuTime(), measure(), latencyCapacity(), newPhase(), deleteIDs, fakeStore, phase, phaseSpec (+2 more)
+Cohesion: 0.09
+Nodes (11): cpuTime(), measure(), latencyCapacity(), newPhase(), deleteIDs, fakeAdapter, fakeStore, phase (+3 more)
 
 ### Community 11 - "testing.T"
-Cohesion: 0.06
-Nodes (57): TestRun(), writeRun(), plainAdapter, New(), newInitialised(), TestAdapterIntegration(), TestInitUnreachableDatabaseIntegration(), TestName() (+49 more)
+Cohesion: 0.07
+Nodes (44): plainAdapter, New(), newInitialised(), TestAdapterIntegration(), TestInitUnreachableDatabaseIntegration(), TestName(), TestReinitAfterCloseIntegration(), TestSelectMissingIDIntegration() (+36 more)
 
-### Community 12 - "flags.go"
-Cohesion: 0.18
-Nodes (18): config, checkProfile(), names(), parseFlags(), parseList(), parseProfiles(), parseScenarios(), TestParseFlagsDefaults() (+10 more)
+### Community 12 - "runCell"
+Cohesion: 0.08
+Nodes (39): config, Files to Change, Acceptance Criteria, checkProfile(), names(), parseFlags(), parseList(), parseProfiles() (+31 more)
 
 ### Community 13 - "Run"
-Cohesion: 0.17
-Nodes (17): Task 8: CLI and compare tool, Acceptance Criteria, main(), run(), Scenario, Host, assemble(), libraryNames() (+9 more)
+Cohesion: 0.26
+Nodes (12): Task 8: CLI and compare tool, Host, shortenTimeouts(), TestRunCellStuckPhase(), assemble(), Run(), runCellRetryingStuck(), matrixOptions() (+4 more)
 
 ### Community 14 - "order/where.go"
 Cohesion: 0.05
 Nodes (60): NOT Building, Task 6: sqlc adapter and codegen, Customer, JoinOrdersRow, Model, Order, Supplier, UnionByCityRow (+52 more)
 
 ### Community 15 - "Plan: Runner & Reference Adapter (Go SQL Benchmark, Phase 2)"
-Cohesion: 0.10
-Nodes (20): Acceptance Criteria (from PRD Phase 2 success signal), Completion Checklist, Design Decisions (made in this plan; flagged because the PRD left them open), DRIVER_USAGE, ERROR_HANDLING, External Documentation, Interaction Changes, MAIN_PATTERN / LOGGING_PATTERN (+12 more)
+Cohesion: 0.05
+Nodes (37): Acceptance Criteria (from PRD Phase 2 success signal), Completion Checklist, Design Decisions (made in this plan; flagged because the PRD left them open), DRIVER_USAGE, Edge Cases Checklist, Environment sanity, ERROR_HANDLING, External Documentation (+29 more)
 
 ### Community 16 - "Check"
 Cohesion: 0.10
-Nodes (24): Task 3: Shared contract suite `internal/adaptertest`, Risks, Acceptance Criteria, main(), preflight(), registryNames(), run(), TestPreflightIntegration() (+16 more)
+Nodes (25): Task 11: Wire into `cmd/bench`, Task 3: Shared contract suite `internal/adaptertest`, Risks, Task 4: Store (reseed and delete pool), Acceptance Criteria, main(), preflight(), registryNames() (+17 more)
 
 ### Community 17 - "Implementation Report: Runner & Reference Adapter (Phase 2)"
-Cohesion: 0.17
-Nodes (12): Assessment vs Reality, Deviations from Plan, Harness floor, Implementation Report: Runner & Reference Adapter (Phase 2), Intermittent hang (open risk), Next Steps, Smoke numbers (3 s stress, 2 s low, 1 repeat; one machine, indicative only), Stability finding (success signal) (+4 more)
+Cohesion: 0.12
+Nodes (18): Task 2: Pure statistics, Assessment vs Reality, Deviations from Plan, Harness floor, Implementation Report: Runner & Reference Adapter (Phase 2), Intermittent hang (open risk), Next Steps, Smoke numbers (3 s stress, 2 s low, 1 repeat; one machine, indicative only) (+10 more)
 
 ### Community 18 - "model/where.go"
 Cohesion: 0.04
@@ -217,7 +212,7 @@ Nodes (5): CustomerGroupBy, CustomerQuery, CustomerSelect, IsNotFound(), setCont
 
 ### Community 21 - "Next session: Phase 3 (Core adapters), after committing Phase 2"
 Cohesion: 0.13
-Nodes (10): Memory, Next session: Phase 3 (Core adapters), after committing Phase 2, Open items (not for this session unless the user asks), Role, Settled decisions (do not reopen), Start here, State, Still to do (+2 more)
+Nodes (11): Task 7: database/sql reference adapter, Memory, Next session: Phase 3 (Core adapters), after committing Phase 2, Open items (not for this session unless the user asks), Role, Settled decisions (do not reopen), Start here, State (+3 more)
 
 ### Community 22 - "OrderQuery"
 Cohesion: 0.09
@@ -233,39 +228,39 @@ Nodes (12): newCustomersTable(), newCustomersTableImpl(), newModelsTable(), newM
 
 ### Community 26 - "context.Context"
 Cohesion: 0.11
-Nodes (5): CreateModelParams, UpdateModelParams, selector, rows(), Adapter
+Nodes (5): Adapter, CreateModelParams, UpdateModelParams, selector, affected()
 
 ### Community 27 - "hook.go"
-Cohesion: 0.19
+Cohesion: 0.20
 Nodes (6): Customers, Models, Orders, Option, WithMigrateOptions(), WithOptions()
 
 ### Community 28 - "entgen/ent.go"
 Cohesion: 0.08
 Nodes (21): AggregateFunc, clientCtxKey, ConstraintError, NotFoundError, NotLoadedError, NotSingularError, OrderFunc, queryHook (+13 more)
 
-### Community 33 - "go_pkg_time"
-Cohesion: 0.17
-Nodes (3): shuffleOrder(), TestShuffleOrder(), TestShuffleOrderEmpty()
+### Community 33 - "Adapter"
+Cohesion: 0.09
+Nodes (5): DBTX, Queries, New(), rows(), Adapter
 
 ### Community 35 - "Plan: Core adapters (sqlc, sqlx, gorm, ent, go-jet) + cross-adapter correctness"
 Cohesion: 0.08
 Nodes (26): Acceptance Criteria, Codegen reproducibility, Completion Checklist, ERROR_HANDLING, External Documentation, INIT_CLOSE (pool config, ping, re-Init after Close), Integration tests, Interaction Changes (+18 more)
 
 ### Community 37 - "Model"
-Cohesion: 0.18
-Nodes (4): fakeLib, fakeStore, world, Model
+Cohesion: 0.13
+Nodes (9): Task 10: `internal/correctness`, fakeStore, world, Models, affected(), toRow(), Model, NewModel() (+1 more)
 
 ### Community 38 - "Client"
-Cohesion: 0.20
-Nodes (5): Client, NewClient(), Open(), FromContext(), NewContext()
+Cohesion: 0.15
+Nodes (11): options, TestingT, Client, NewClient(), Open(), FromContext(), NewContext(), migrateSchema() (+3 more)
 
 ### Community 39 - "Tx"
 Cohesion: 0.12
 Nodes (7): CommitFunc, Committer, Rollbacker, RollbackFunc, Tx, NewTxContext(), TxFromContext()
 
 ### Community 42 - "Verifier"
-Cohesion: 0.21
-Nodes (14): Verifier, diffModel(), TestDiffModel(), checkJoin(), checkReads(), checkSubject(), checkUnion(), compareRead() (+6 more)
+Cohesion: 0.17
+Nodes (18): Verifier, diffModel(), TestDiffModel(), checkJoin(), checkReads(), checkSubject(), checkUnion(), compareRead() (+10 more)
 
 ### Community 43 - "Adapter"
 Cohesion: 0.13
@@ -276,32 +271,32 @@ Cohesion: 0.16
 Nodes (15): Chain, Condition, And(), FixedError(), HasAddedFields(), HasClearedFields(), HasFields(), HasOp() (+7 more)
 
 ### Community 45 - "Metrics"
-Cohesion: 0.29
-Nodes (7): Cell, Metrics, buildCell(), record(), medianMetrics(), TestMedianMetrics(), cellAcc
+Cohesion: 0.17
+Nodes (12): Task 6: Matrix runner, Cell, Metrics, buildCell(), record(), median(), medianMetrics(), TestMedian() (+4 more)
 
 ### Community 46 - "Adapter"
 Cohesion: 0.17
 Nodes (4): Adapter, modelRow, affected(), toRow()
 
 ### Community 47 - "Adapter"
-Cohesion: 0.07
-Nodes (11): Task 9: go-jet adapter and codegen, DBTX, Customers, Models, Orders, affected(), toRow(), Queries (+3 more)
+Cohesion: 0.17
+Nodes (5): Task 9: go-jet adapter and codegen, Customers, Orders, Adapter, joinRow
 
 ### Community 50 - "client.go"
-Cohesion: 0.19
+Cohesion: 0.18
 Nodes (3): Debug(), Option, Log()
 
-### Community 51 - "NewModel"
-Cohesion: 0.11
-Nodes (21): Edge Cases Checklist, Integration Tests (`BENCH_DSN`, named `...Integration`, `-p 1`), Step-by-Step Tasks, Task 10: `internal/correctness`, Task 11: Wire into `cmd/bench`, Task 12: Documentation, Task 13: Full validation and review, Task 1: Tooling module and Makefile (+13 more)
+### Community 51 - "Step-by-Step Tasks"
+Cohesion: 0.14
+Nodes (11): Decisions made by this plan (flag to the user; change before implementing if they disagree), Step-by-Step Tasks, Task 12: Documentation, Task 13: Full validation and review, Task 1: Tooling module and Makefile, Task 4: Reference `Verifier` on `databasesql`, Task 5: sqlx adapter, Task 7: gorm adapter (+3 more)
 
-### Community 52 - "orderRow"
-Cohesion: 0.50
-Nodes (3): Task 7: gorm adapter, customerRow, orderRow
+### Community 52 - "fakeLib"
+Cohesion: 0.19
+Nodes (3): fakeLib, seedJoin(), seedUnion()
 
 ### Community 53 - "config"
 Cohesion: 0.16
-Nodes (6): config, hooks, inters, newConfig(), NewModelClient(), NewOrderClient()
+Nodes (6): config, hooks, inters, newConfig(), NewCustomerClient(), NewModelClient()
 
 ### Community 54 - "CustomerClient"
 Cohesion: 0.21
@@ -317,31 +312,27 @@ Nodes (14): Files to Change, Mandatory Reading, Assessment vs Reality, Coverage 
 
 ### Community 58 - "UnionRow"
 Cohesion: 0.14
-Nodes (6): Decisions made by this plan (flag to the user; change before implementing if they disagree), Task 8: ent adapter and codegen, UnionRow, diffUnion(), TestDiffUnion(), seedUnion()
-
-### Community 59 - "Adapter"
-Cohesion: 0.17
-Nodes (3): Adapter, Driver(), ID()
+Nodes (11): Edge Cases Checklist, Integration Tests (`BENCH_DSN`, named `...Integration`, `-p 1`), Task 2: `bench.Verifier` types, Testing Strategy, Unit Tests (no DB), TestRegistryNamesMatchAdapters(), UnionRow, SortUnionRows() (+3 more)
 
 ### Community 60 - "txDriver"
 Cohesion: 0.18
 Nodes (4): CommitHook, RollbackHook, txDriver, newTx()
 
+### Community 61 - "Order"
+Cohesion: 0.18
+Nodes (3): OrderEdges, NewOrderClient(), Order
+
 ### Community 62 - "JoinRow"
-Cohesion: 0.20
-Nodes (5): JoinRow, diffJoin(), sameJoinRow(), TestDiffJoin(), seedJoin()
+Cohesion: 0.21
+Nodes (7): JoinRow, SortJoinRows(), TestSortJoinRows(), diffJoin(), sameJoinRow(), TestDiffJoin(), checkGoldenJoin()
 
 ### Community 63 - "Schema"
-Cohesion: 0.43
-Nodes (3): Create(), Schema, NewSchema()
+Cohesion: 0.21
+Nodes (5): Driver(), Create(), Schema, NewSchema(), progress()
 
 ### Community 69 - "model/model.go"
 Cohesion: 0.33
 Nodes (10): ByAge(), ByCounter(), ByFax(), ByID(), ByName(), ByRight(), ByTitle(), ByWeb() (+2 more)
-
-### Community 70 - "Customer"
-Cohesion: 0.18
-Nodes (3): Customer, CustomerEdges, NewCustomerClient()
 
 ### Community 72 - "mutation.go"
 Cohesion: 0.29
@@ -359,10 +350,6 @@ Nodes (8): ByCreatedAt(), ByCustomerField(), ByCustomerID(), ByID(), ByStatus(),
 Cohesion: 0.25
 Nodes (4): orderOption, newOrderMutation(), withOrder(), withOrderID()
 
-### Community 77 - "Files to Change"
-Cohesion: 0.19
-Nodes (15): Edge Cases Checklist, Files to Change, Task 2: Pure statistics, Task 6: Matrix runner, Testing Strategy, Unit Tests, Code review (`ecc:go-reviewer`): 0 CRITICAL, 2 HIGH, 6 MEDIUM, 9 LOW, TestScenarioExpectedRows() (+7 more)
-
 ### Community 80 - ".Mutate"
 Cohesion: 0.32
 Nodes (3): CustomerFunc, ModelFunc, OrderFunc
@@ -371,49 +358,25 @@ Nodes (3): CustomerFunc, ModelFunc, OrderFunc
 Cohesion: 0.40
 Nodes (3): querierAll(), scanWithInterceptors(), withInterceptors()
 
-### Community 87 - "writes.go"
-Cohesion: 0.30
-Nodes (9): insertedID(), checkDelete(), checkMissingID(), checkWrites(), expectRows(), open(), probe(), probeCall() (+1 more)
-
-### Community 89 - "result.go"
-Cohesion: 0.24
-Nodes (7): format(), compareCell(), Deviation, relativeDiff(), cellKey, Config, ProfileConfig
-
-### Community 93 - "Step-by-Step Tasks"
-Cohesion: 0.20
-Nodes (9): Mandatory Reading, Step-by-Step Tasks, Task 10: End-to-end validation, Task 1: Embed SQL and core types, Task 3: Result format, validation, compare, Task 4: Store (reseed and delete pool), Task 5: Worker loop and cell execution (tests first, with fakes), Task 7: database/sql reference adapter (+1 more)
-
-### Community 94 - "Validation Commands"
-Cohesion: 0.22
-Nodes (9): Environment sanity, Integration (needs the DB), Manual Validation, Negative checks, Smoke run (fast), Static Analysis, Success signal: stability (PRD Phase 2), Unit Tests (+1 more)
-
-### Community 95 - "migrateSchema"
-Cohesion: 0.39
-Nodes (6): options, TestingT, migrateSchema(), NewClient(), newOptions(), Open()
-
-### Community 97 - "stats_test.go"
-Cohesion: 0.60
-Nodes (5): assertFinite(), oneToHundred(), shuffled(), TestPercentile(), TestSummarize()
-
 ## Knowledge Gaps
 - **10 isolated node(s):** `github.com/restuu/go-sql-benchmark`, `github.com/restuu/go-sql-benchmark/tools`, `PRD open questions (weights, stress parameters, dataset size)`, `Next steps (code review, git init, Phase 2 plan)`, `Deviations from plan` (+5 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 253 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 252 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
 - **35 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `OrderMutation` connect `OrderMutation` to `Op`, `OrderDelete`, `entgo.io/ent.Value`, `Tx`, `OrderCreate`, `mutation.go`, `.Client`, `newOrderMutation`, `order/where.go`, `.sqlSave`, `.SetTotal`, `context.Context`, `OrderUpdateOne`?**
-  _High betweenness centrality (0.075) - this node is a cross-community bridge._
+- **Why does `ModelMutation` connect `ModelMutation` to `ModelCreate`, `Op`, `ModelDelete`, `CustomerMutation`, `Client`, `entgo.io/ent.Value`, `Tx`, `mutation.go`, `.Client`, `newOrderMutation`, `.sqlSave`, `.SetCounter`, `model/where.go`, `.SetAge`, `ModelClient`, `context.Context`, `ModelUpdateOne`?**
+  _High betweenness centrality (0.073) - this node is a cross-community bridge._
 - **What connects `github.com/restuu/go-sql-benchmark`, `github.com/restuu/go-sql-benchmark/tools`, `PRD open questions (weights, stress parameters, dataset size)` to the rest of the system?**
   _10 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `bench/main.go` be split into smaller, more focused modules?**
+  _Cohesion score 0.11192930780559647 - nodes in this community are weakly interconnected._
+- **Why does `CustomerMutation` connect `CustomerMutation` to `Op`, `CustomerDelete`, `.sqlSave`, `Client`, `entgo.io/ent.Value`, `CustomerCreate`, `Tx`, `mutation.go`, `.Client`, `newOrderMutation`, `customer/where.go`, `CustomerClient`, `.SetField`, `.ClearOrders`, `context.Context`, `CustomerUpdateOne`?**
+  _High betweenness centrality (0.065) - this node is a cross-community bridge._
 - **Should `fakeAdapter` be split into smaller, more focused modules?**
-  _Cohesion score 0.12 - nodes in this community are weakly interconnected._
-- **Why does `ModelMutation` connect `ModelMutation` to `ModelCreate`, `Op`, `ModelDelete`, `CustomerMutation`, `Client`, `entgo.io/ent.Value`, `Tx`, `mutation.go`, `.Client`, `newOrderMutation`, `.sqlSave`, `.SetCounter`, `model/where.go`, `.SetAge`, `ModelClient`, `context.Context`, `ModelUpdateOne`?**
-  _High betweenness centrality (0.070) - this node is a cross-community bridge._
+  _Cohesion score 0.09309309309309309 - nodes in this community are weakly interconnected._
+- **Why does `OrderMutation` connect `OrderMutation` to `Op`, `OrderDelete`, `entgo.io/ent.Value`, `Tx`, `OrderCreate`, `mutation.go`, `.Client`, `newOrderMutation`, `order/where.go`, `.sqlSave`, `.SetField`, `.SetTotal`, `context.Context`, `OrderUpdateOne`?**
+  _High betweenness centrality (0.056) - this node is a cross-community bridge._
 - **Should `testing.T` be split into smaller, more focused modules?**
-  _Cohesion score 0.06436487638533675 - nodes in this community are weakly interconnected._
-- **Why does `CustomerMutation` connect `CustomerMutation` to `Op`, `CustomerDelete`, `.sqlSave`, `.SetName`, `Client`, `entgo.io/ent.Value`, `CustomerCreate`, `Tx`, `mutation.go`, `.Client`, `newOrderMutation`, `customer/where.go`, `CustomerClient`, `context.Context`, `CustomerUpdateOne`?**
-  _High betweenness centrality (0.053) - this node is a cross-community bridge._
-- **Should `order/where.go` be split into smaller, more focused modules?**
-  _Cohesion score 0.05098934550989345 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06901960784313725 - nodes in this community are weakly interconnected._
