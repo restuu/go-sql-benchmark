@@ -8,7 +8,7 @@ HOST_ARCH := $(shell uname -m | sed -e 's/x86_64/amd64/' -e 's/aarch64/arm64/')
 
 BENCH_ARGS ?=
 
-.PHONY: arch-check db-up db-down db-reset db-seed db-check build vet test test-db bench bench-cmp gen gen-sqlc gen-ent gen-jet gen-check
+.PHONY: arch-check db-up db-down db-reset db-seed db-check build vet test test-db bench bench-cmp report gen gen-sqlc gen-ent gen-jet gen-check
 
 arch-check:
 	@if [ "$(GO_ARCH)" != "$(HOST_ARCH)" ]; then \
@@ -48,6 +48,9 @@ bench: arch-check db-up
 
 bench-cmp:
 	go run ./cmd/benchcmp $(A) $(B)
+
+report:
+	go run ./cmd/report -in $(IN) $(if $(OUT),-out $(OUT))
 
 # Code generators are pinned in tools/go.mod (tool directives) so the main go.mod stays free of them.
 GOTOOL   := go tool -modfile=tools/go.mod

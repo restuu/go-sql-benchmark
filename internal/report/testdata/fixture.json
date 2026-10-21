@@ -1,0 +1,1211 @@
+{
+  "schema_version": 1,
+  "started_at": "2026-10-21T04:58:02.103212Z",
+  "host": {
+    "goos": "darwin",
+    "goarch": "arm64",
+    "go_version": "go1.27.3",
+    "num_cpu": 8,
+    "gomaxprocs": 8,
+    "postgres_version": "15.19",
+    "libraries": {
+      "ent": "v0.14.6",
+      "pgx": "v5.11.0",
+      "sqlx": "v1.4.0"
+    }
+  },
+  "config": {
+    "seed": 1792558680234027000,
+    "repeats": 1,
+    "profiles": [
+      {
+        "name": "low",
+        "workers": 4,
+        "interval_ns": 10000000,
+        "warmup_ns": 1000000000,
+        "duration_ns": 3000000000,
+        "delete_pool": 5000
+      },
+      {
+        "name": "stress",
+        "workers": 100,
+        "interval_ns": 0,
+        "warmup_ns": 2000000000,
+        "duration_ns": 3000000000,
+        "delete_pool": 100000
+      }
+    ]
+  },
+  "cells": [
+    {
+      "library": "database_sql",
+      "scenario": "insert",
+      "profile": "low",
+      "status": "ok",
+      "repeats": [
+        {
+          "ops": 1200,
+          "errors": 0,
+          "error_rate": 0,
+          "throughput_ops_per_sec": 398.89624305932546,
+          "latency_p50_ns": 2845500,
+          "latency_p95_ns": 9920167,
+          "latency_p99_ns": 24342458,
+          "bytes_per_op": 873.92,
+          "allocs_per_op": 14.025,
+          "cpu_ns_per_op": 195347.5,
+          "elapsed_seconds": 3.008301083
+        }
+      ],
+      "median": {
+        "ops": 1200,
+        "errors": 0,
+        "error_rate": 0,
+        "throughput_ops_per_sec": 398.89624305932546,
+        "latency_p50_ns": 2845500,
+        "latency_p95_ns": 9920167,
+        "latency_p99_ns": 24342458,
+        "bytes_per_op": 873.92,
+        "allocs_per_op": 14.025,
+        "cpu_ns_per_op": 195347.5,
+        "elapsed_seconds": 3.008301083
+      }
+    },
+    {
+      "library": "database_sql",
+      "scenario": "insert",
+      "profile": "stress",
+      "status": "ok",
+      "repeats": [
+        {
+          "ops": 58906,
+          "errors": 0,
+          "error_rate": 0,
+          "throughput_ops_per_sec": 18414.075289762743,
+          "latency_p50_ns": 3067542,
+          "latency_p95_ns": 6165417,
+          "latency_p99_ns": 15990000,
+          "bytes_per_op": 873.7167690897362,
+          "allocs_per_op": 14.010779886598987,
+          "cpu_ns_per_op": 40334.68577054969,
+          "elapsed_seconds": 3.198965958
+        }
+      ],
+      "median": {
+        "ops": 58906,
+        "errors": 0,
+        "error_rate": 0,
+        "throughput_ops_per_sec": 18414.075289762743,
+        "latency_p50_ns": 3067542,
+        "latency_p95_ns": 6165417,
+        "latency_p99_ns": 15990000,
+        "bytes_per_op": 873.7167690897362,
+        "allocs_per_op": 14.010779886598987,
+        "cpu_ns_per_op": 40334.68577054969,
+        "elapsed_seconds": 3.198965958
+      }
+    },
+    {
+      "library": "database_sql",
+      "scenario": "update",
+      "profile": "low",
+      "status": "ok",
+      "repeats": [
+        {
+          "ops": 1200,
+          "errors": 0,
+          "error_rate": 0,
+          "throughput_ops_per_sec": 398.78035249068023,
+          "latency_p50_ns": 2427250,
+          "latency_p95_ns": 8297917,
+          "latency_p99_ns": 13703500,
+          "bytes_per_op": 929.56,
+          "allocs_per_op": 15.966666666666667,
+          "cpu_ns_per_op": 222731.66666666666,
+          "elapsed_seconds": 3.009175333
+        }
+      ],
+      "median": {
+        "ops": 1200,
+        "errors": 0,
+        "error_rate": 0,
+        "throughput_ops_per_sec": 398.78035249068023,
+        "latency_p50_ns": 2427250,
+        "latency_p95_ns": 8297917,
+        "latency_p99_ns": 13703500,
+        "bytes_per_op": 929.56,
+        "allocs_per_op": 15.966666666666667,
+        "cpu_ns_per_op": 222731.66666666666,
+        "elapsed_seconds": 3.009175333
+      }
+    },
+    {
+      "library": "database_sql",
+      "scenario": "update",
+      "profile": "stress",
+      "status": "ok",
+      "repeats": [
+        {
+          "ops": 50820,
+          "errors": 0,
+          "error_rate": 0,
+          "throughput_ops_per_sec": 16128.007460789593,
+          "latency_p50_ns": 3611500,
+          "latency_p95_ns": 7613041,
+          "latency_p99_ns": 19521500,
+          "bytes_per_op": 929.5732388823297,
+          "allocs_per_op": 15.953325462416371,
+          "cpu_ns_per_op": 39679.10271546635,
+          "elapsed_seconds": 3.151040209
+        }
+      ],
+      "median": {
+        "ops": 50820,
+        "errors": 0,
+        "error_rate": 0,
+        "throughput_ops_per_sec": 16128.007460789593,
+        "latency_p50_ns": 3611500,
+        "latency_p95_ns": 7613041,
+        "latency_p99_ns": 19521500,
+        "bytes_per_op": 929.5732388823297,
+        "allocs_per_op": 15.953325462416371,
+        "cpu_ns_per_op": 39679.10271546635,
+        "elapsed_seconds": 3.151040209
+      }
+    },
+    {
+      "library": "database_sql",
+      "scenario": "delete",
+      "profile": "low",
+      "status": "ok",
+      "repeats": [
+        {
+          "ops": 1200,
+          "errors": 0,
+          "error_rate": 0,
+          "throughput_ops_per_sec": 398.9522958168159,
+          "latency_p50_ns": 2271583,
+          "latency_p95_ns": 7335167,
+          "latency_p99_ns": 13659000,
+          "bytes_per_op": 473.56,
+          "allocs_per_op": 11.0175,
+          "cpu_ns_per_op": 176520.83333333334,
+          "elapsed_seconds": 3.007878417
+        }
+      ],
+      "median": {
+        "ops": 1200,
+        "errors": 0,
+        "error_rate": 0,
+        "throughput_ops_per_sec": 398.9522958168159,
+        "latency_p50_ns": 2271583,
+        "latency_p95_ns": 7335167,
+        "latency_p99_ns": 13659000,
+        "bytes_per_op": 473.56,
+        "allocs_per_op": 11.0175,
+        "cpu_ns_per_op": 176520.83333333334,
+        "elapsed_seconds": 3.007878417
+      }
+    },
+    {
+      "library": "database_sql",
+      "scenario": "delete",
+      "profile": "stress",
+      "status": "ok",
+      "repeats": [
+        {
+          "ops": 57981,
+          "errors": 0,
+          "error_rate": 0,
+          "throughput_ops_per_sec": 18740.049675517726,
+          "latency_p50_ns": 2852708,
+          "latency_p95_ns": 5002083,
+          "latency_p99_ns": 202077583,
+          "bytes_per_op": 472.81047239612974,
+          "allocs_per_op": 11.003621876131836,
+          "cpu_ns_per_op": 46400.3380417723,
+          "elapsed_seconds": 3.093961916
+        }
+      ],
+      "median": {
+        "ops": 57981,
+        "errors": 0,
+        "error_rate": 0,
+        "throughput_ops_per_sec": 18740.049675517726,
+        "latency_p50_ns": 2852708,
+        "latency_p95_ns": 5002083,
+        "latency_p99_ns": 202077583,
+        "bytes_per_op": 472.81047239612974,
+        "allocs_per_op": 11.003621876131836,
+        "cpu_ns_per_op": 46400.3380417723,
+        "elapsed_seconds": 3.093961916
+      }
+    },
+    {
+      "library": "database_sql",
+      "scenario": "select",
+      "profile": "low",
+      "status": "ok",
+      "repeats": [
+        {
+          "ops": 1200,
+          "errors": 0,
+          "error_rate": 0,
+          "throughput_ops_per_sec": 398.2985240686735,
+          "latency_p50_ns": 988708,
+          "latency_p95_ns": 5764834,
+          "latency_p99_ns": 12013875,
+          "bytes_per_op": 1975.7266666666667,
+          "allocs_per_op": 50.163333333333334,
+          "cpu_ns_per_op": 255293.33333333334,
+          "elapsed_seconds": 3.012815583
+        }
+      ],
+      "median": {
+        "ops": 1200,
+        "errors": 0,
+        "error_rate": 0,
+        "throughput_ops_per_sec": 398.2985240686735,
+        "latency_p50_ns": 988708,
+        "latency_p95_ns": 5764834,
+        "latency_p99_ns": 12013875,
+        "bytes_per_op": 1975.7266666666667,
+        "allocs_per_op": 50.163333333333334,
+        "cpu_ns_per_op": 255293.33333333334,
+        "elapsed_seconds": 3.012815583
+      }
+    },
+    {
+      "library": "database_sql",
+      "scenario": "select",
+      "profile": "stress",
+      "status": "ok",
+      "repeats": [
+        {
+          "ops": 103325,
+          "errors": 0,
+          "error_rate": 0,
+          "throughput_ops_per_sec": 31041.323752857737,
+          "latency_p50_ns": 908583,
+          "latency_p95_ns": 1952708,
+          "latency_p99_ns": 21938750,
+          "bytes_per_op": 1947.0279603193806,
+          "allocs_per_op": 49.96239051536414,
+          "cpu_ns_per_op": 40998.76119041858,
+          "elapsed_seconds": 3.328627375
+        }
+      ],
+      "median": {
+        "ops": 103325,
+        "errors": 0,
+        "error_rate": 0,
+        "throughput_ops_per_sec": 31041.323752857737,
+        "latency_p50_ns": 908583,
+        "latency_p95_ns": 1952708,
+        "latency_p99_ns": 21938750,
+        "bytes_per_op": 1947.0279603193806,
+        "allocs_per_op": 49.96239051536414,
+        "cpu_ns_per_op": 40998.76119041858,
+        "elapsed_seconds": 3.328627375
+      }
+    },
+    {
+      "library": "database_sql",
+      "scenario": "join",
+      "profile": "low",
+      "status": "ok",
+      "repeats": [
+        {
+          "ops": 1200,
+          "errors": 0,
+          "error_rate": 0,
+          "throughput_ops_per_sec": 398.95053840049087,
+          "latency_p50_ns": 1096375,
+          "latency_p95_ns": 5578000,
+          "latency_p99_ns": 10835583,
+          "bytes_per_op": 3612.76,
+          "allocs_per_op": 184.555,
+          "cpu_ns_per_op": 423869.1666666667,
+          "elapsed_seconds": 3.007891667
+        }
+      ],
+      "median": {
+        "ops": 1200,
+        "errors": 0,
+        "error_rate": 0,
+        "throughput_ops_per_sec": 398.95053840049087,
+        "latency_p50_ns": 1096375,
+        "latency_p95_ns": 5578000,
+        "latency_p99_ns": 10835583,
+        "bytes_per_op": 3612.76,
+        "allocs_per_op": 184.555,
+        "cpu_ns_per_op": 423869.1666666667,
+        "elapsed_seconds": 3.007891667
+      }
+    },
+    {
+      "library": "database_sql",
+      "scenario": "join",
+      "profile": "stress",
+      "status": "ok",
+      "repeats": [
+        {
+          "ops": 70357,
+          "errors": 0,
+          "error_rate": 0,
+          "throughput_ops_per_sec": 22047.035396064246,
+          "latency_p50_ns": 1317834,
+          "latency_p95_ns": 3841917,
+          "latency_p99_ns": 201357625,
+          "bytes_per_op": 3558.4547379791634,
+          "allocs_per_op": 183.6891283027986,
+          "cpu_ns_per_op": 88865.61394033287,
+          "elapsed_seconds": 3.191222708
+        }
+      ],
+      "median": {
+        "ops": 70357,
+        "errors": 0,
+        "error_rate": 0,
+        "throughput_ops_per_sec": 22047.035396064246,
+        "latency_p50_ns": 1317834,
+        "latency_p95_ns": 3841917,
+        "latency_p99_ns": 201357625,
+        "bytes_per_op": 3558.4547379791634,
+        "allocs_per_op": 183.6891283027986,
+        "cpu_ns_per_op": 88865.61394033287,
+        "elapsed_seconds": 3.191222708
+      }
+    },
+    {
+      "library": "database_sql",
+      "scenario": "union",
+      "profile": "low",
+      "status": "ok",
+      "repeats": [
+        {
+          "ops": 1200,
+          "errors": 0,
+          "error_rate": 0,
+          "throughput_ops_per_sec": 398.95849119760663,
+          "latency_p50_ns": 1222375,
+          "latency_p95_ns": 5226833,
+          "latency_p99_ns": 10280125,
+          "bytes_per_op": 5299.933333333333,
+          "allocs_per_op": 269.4583333333333,
+          "cpu_ns_per_op": 214090.83333333334,
+          "elapsed_seconds": 3.007831708
+        }
+      ],
+      "median": {
+        "ops": 1200,
+        "errors": 0,
+        "error_rate": 0,
+        "throughput_ops_per_sec": 398.95849119760663,
+        "latency_p50_ns": 1222375,
+        "latency_p95_ns": 5226833,
+        "latency_p99_ns": 10280125,
+        "bytes_per_op": 5299.933333333333,
+        "allocs_per_op": 269.4583333333333,
+        "cpu_ns_per_op": 214090.83333333334,
+        "elapsed_seconds": 3.007831708
+      }
+    },
+    {
+      "library": "database_sql",
+      "scenario": "union",
+      "profile": "stress",
+      "status": "ok",
+      "repeats": [
+        {
+          "ops": 54225,
+          "errors": 0,
+          "error_rate": 0,
+          "throughput_ops_per_sec": 17340.969988872115,
+          "latency_p50_ns": 1760416,
+          "latency_p95_ns": 4888500,
+          "latency_p99_ns": 202037333,
+          "bytes_per_op": 5261.958727524205,
+          "allocs_per_op": 269.15835869064085,
+          "cpu_ns_per_op": 57690.93591516828,
+          "elapsed_seconds": 3.126987708
+        }
+      ],
+      "median": {
+        "ops": 54225,
+        "errors": 0,
+        "error_rate": 0,
+        "throughput_ops_per_sec": 17340.969988872115,
+        "latency_p50_ns": 1760416,
+        "latency_p95_ns": 4888500,
+        "latency_p99_ns": 202037333,
+        "bytes_per_op": 5261.958727524205,
+        "allocs_per_op": 269.15835869064085,
+        "cpu_ns_per_op": 57690.93591516828,
+        "elapsed_seconds": 3.126987708
+      }
+    },
+    {
+      "library": "ent",
+      "scenario": "insert",
+      "profile": "low",
+      "status": "ok",
+      "repeats": [
+        {
+          "ops": 1200,
+          "errors": 0,
+          "error_rate": 0,
+          "throughput_ops_per_sec": 398.958485626731,
+          "latency_p50_ns": 2610292,
+          "latency_p95_ns": 9276333,
+          "latency_p99_ns": 14371166,
+          "bytes_per_op": 4388.52,
+          "allocs_per_op": 98.0475,
+          "cpu_ns_per_op": 326083.3333333333,
+          "elapsed_seconds": 3.00783175
+        }
+      ],
+      "median": {
+        "ops": 1200,
+        "errors": 0,
+        "error_rate": 0,
+        "throughput_ops_per_sec": 398.958485626731,
+        "latency_p50_ns": 2610292,
+        "latency_p95_ns": 9276333,
+        "latency_p99_ns": 14371166,
+        "bytes_per_op": 4388.52,
+        "allocs_per_op": 98.0475,
+        "cpu_ns_per_op": 326083.3333333333,
+        "elapsed_seconds": 3.00783175
+      }
+    },
+    {
+      "library": "ent",
+      "scenario": "insert",
+      "profile": "stress",
+      "status": "ok",
+      "repeats": [
+        {
+          "ops": 49673,
+          "errors": 0,
+          "error_rate": 0,
+          "throughput_ops_per_sec": 15612.79525980537,
+          "latency_p50_ns": 3457417,
+          "latency_p95_ns": 6949959,
+          "latency_p99_ns": 202750750,
+          "bytes_per_op": 4389.272723612426,
+          "allocs_per_op": 98.05781813057395,
+          "cpu_ns_per_op": 57364.78569846798,
+          "elapsed_seconds": 3.181557125
+        }
+      ],
+      "median": {
+        "ops": 49673,
+        "errors": 0,
+        "error_rate": 0,
+        "throughput_ops_per_sec": 15612.79525980537,
+        "latency_p50_ns": 3457417,
+        "latency_p95_ns": 6949959,
+        "latency_p99_ns": 202750750,
+        "bytes_per_op": 4389.272723612426,
+        "allocs_per_op": 98.05781813057395,
+        "cpu_ns_per_op": 57364.78569846798,
+        "elapsed_seconds": 3.181557125
+      }
+    },
+    {
+      "library": "ent",
+      "scenario": "update",
+      "profile": "low",
+      "status": "ok",
+      "repeats": [
+        {
+          "ops": 1200,
+          "errors": 0,
+          "error_rate": 0,
+          "throughput_ops_per_sec": 398.96100036233935,
+          "latency_p50_ns": 3562209,
+          "latency_p95_ns": 10201167,
+          "latency_p99_ns": 17422333,
+          "bytes_per_op": 4918.08,
+          "allocs_per_op": 100.965,
+          "cpu_ns_per_op": 321676.6666666667,
+          "elapsed_seconds": 3.007812791
+        }
+      ],
+      "median": {
+        "ops": 1200,
+        "errors": 0,
+        "error_rate": 0,
+        "throughput_ops_per_sec": 398.96100036233935,
+        "latency_p50_ns": 3562209,
+        "latency_p95_ns": 10201167,
+        "latency_p99_ns": 17422333,
+        "bytes_per_op": 4918.08,
+        "allocs_per_op": 100.965,
+        "cpu_ns_per_op": 321676.6666666667,
+        "elapsed_seconds": 3.007812791
+      }
+    },
+    {
+      "library": "ent",
+      "scenario": "update",
+      "profile": "stress",
+      "status": "ok",
+      "repeats": [
+        {
+          "ops": 40816,
+          "errors": 0,
+          "error_rate": 0,
+          "throughput_ops_per_sec": 12997.246158794234,
+          "latency_p50_ns": 3877958,
+          "latency_p95_ns": 9984000,
+          "latency_p99_ns": 204594208,
+          "bytes_per_op": 4919.871226969815,
+          "allocs_per_op": 100.95229811838495,
+          "cpu_ns_per_op": 45527.881223049786,
+          "elapsed_seconds": 3.140357542
+        }
+      ],
+      "median": {
+        "ops": 40816,
+        "errors": 0,
+        "error_rate": 0,
+        "throughput_ops_per_sec": 12997.246158794234,
+        "latency_p50_ns": 3877958,
+        "latency_p95_ns": 9984000,
+        "latency_p99_ns": 204594208,
+        "bytes_per_op": 4919.871226969815,
+        "allocs_per_op": 100.95229811838495,
+        "cpu_ns_per_op": 45527.881223049786,
+        "elapsed_seconds": 3.140357542
+      }
+    },
+    {
+      "library": "ent",
+      "scenario": "delete",
+      "profile": "low",
+      "status": "ok",
+      "repeats": [
+        {
+          "ops": 1200,
+          "errors": 0,
+          "error_rate": 0,
+          "throughput_ops_per_sec": 398.96580310599484,
+          "latency_p50_ns": 2451334,
+          "latency_p95_ns": 8504917,
+          "latency_p99_ns": 15532459,
+          "bytes_per_op": 2121.4533333333334,
+          "allocs_per_op": 44.016666666666666,
+          "cpu_ns_per_op": 260175,
+          "elapsed_seconds": 3.007776583
+        }
+      ],
+      "median": {
+        "ops": 1200,
+        "errors": 0,
+        "error_rate": 0,
+        "throughput_ops_per_sec": 398.96580310599484,
+        "latency_p50_ns": 2451334,
+        "latency_p95_ns": 8504917,
+        "latency_p99_ns": 15532459,
+        "bytes_per_op": 2121.4533333333334,
+        "allocs_per_op": 44.016666666666666,
+        "cpu_ns_per_op": 260175,
+        "elapsed_seconds": 3.007776583
+      }
+    },
+    {
+      "library": "ent",
+      "scenario": "delete",
+      "profile": "stress",
+      "status": "ok",
+      "repeats": [
+        {
+          "ops": 37836,
+          "errors": 0,
+          "error_rate": 0,
+          "throughput_ops_per_sec": 12014.99254243074,
+          "latency_p50_ns": 4137708,
+          "latency_p95_ns": 12421417,
+          "latency_p99_ns": 204195583,
+          "bytes_per_op": 2121.0375303943333,
+          "allocs_per_op": 44.00372660957818,
+          "cpu_ns_per_op": 38184.98255629559,
+          "elapsed_seconds": 3.149065625
+        }
+      ],
+      "median": {
+        "ops": 37836,
+        "errors": 0,
+        "error_rate": 0,
+        "throughput_ops_per_sec": 12014.99254243074,
+        "latency_p50_ns": 4137708,
+        "latency_p95_ns": 12421417,
+        "latency_p99_ns": 204195583,
+        "bytes_per_op": 2121.0375303943333,
+        "allocs_per_op": 44.00372660957818,
+        "cpu_ns_per_op": 38184.98255629559,
+        "elapsed_seconds": 3.149065625
+      }
+    },
+    {
+      "library": "ent",
+      "scenario": "select",
+      "profile": "low",
+      "status": "ok",
+      "repeats": [
+        {
+          "ops": 1196,
+          "errors": 0,
+          "error_rate": 0,
+          "throughput_ops_per_sec": 395.61971898016617,
+          "latency_p50_ns": 1000750,
+          "latency_p95_ns": 6445166,
+          "latency_p99_ns": 10809083,
+          "bytes_per_op": 5579.076923076923,
+          "allocs_per_op": 145.12625418060202,
+          "cpu_ns_per_op": 313550.16722408024,
+          "elapsed_seconds": 3.023105125
+        }
+      ],
+      "median": {
+        "ops": 1196,
+        "errors": 0,
+        "error_rate": 0,
+        "throughput_ops_per_sec": 395.61971898016617,
+        "latency_p50_ns": 1000750,
+        "latency_p95_ns": 6445166,
+        "latency_p99_ns": 10809083,
+        "bytes_per_op": 5579.076923076923,
+        "allocs_per_op": 145.12625418060202,
+        "cpu_ns_per_op": 313550.16722408024,
+        "elapsed_seconds": 3.023105125
+      }
+    },
+    {
+      "library": "ent",
+      "scenario": "select",
+      "profile": "stress",
+      "status": "ok",
+      "repeats": [
+        {
+          "ops": 76422,
+          "errors": 0,
+          "error_rate": 0,
+          "throughput_ops_per_sec": 24245.023462112436,
+          "latency_p50_ns": 1164167,
+          "latency_p95_ns": 3582250,
+          "latency_p99_ns": 201022750,
+          "bytes_per_op": 5563.570804218681,
+          "allocs_per_op": 144.97450995786554,
+          "cpu_ns_per_op": 44849.15338515087,
+          "elapsed_seconds": 3.152069542
+        }
+      ],
+      "median": {
+        "ops": 76422,
+        "errors": 0,
+        "error_rate": 0,
+        "throughput_ops_per_sec": 24245.023462112436,
+        "latency_p50_ns": 1164167,
+        "latency_p95_ns": 3582250,
+        "latency_p99_ns": 201022750,
+        "bytes_per_op": 5563.570804218681,
+        "allocs_per_op": 144.97450995786554,
+        "cpu_ns_per_op": 44849.15338515087,
+        "elapsed_seconds": 3.152069542
+      }
+    },
+    {
+      "library": "ent",
+      "scenario": "join",
+      "profile": "low",
+      "status": "ok",
+      "repeats": [
+        {
+          "ops": 1200,
+          "errors": 0,
+          "error_rate": 0,
+          "throughput_ops_per_sec": 398.95863484666796,
+          "latency_p50_ns": 1321541,
+          "latency_p95_ns": 9795875,
+          "latency_p99_ns": 17702333,
+          "bytes_per_op": 13858.386666666667,
+          "allocs_per_op": 346.6375,
+          "cpu_ns_per_op": 421036.6666666667,
+          "elapsed_seconds": 3.007830625
+        }
+      ],
+      "median": {
+        "ops": 1200,
+        "errors": 0,
+        "error_rate": 0,
+        "throughput_ops_per_sec": 398.95863484666796,
+        "latency_p50_ns": 1321541,
+        "latency_p95_ns": 9795875,
+        "latency_p99_ns": 17702333,
+        "bytes_per_op": 13858.386666666667,
+        "allocs_per_op": 346.6375,
+        "cpu_ns_per_op": 421036.6666666667,
+        "elapsed_seconds": 3.007830625
+      }
+    },
+    {
+      "library": "ent",
+      "scenario": "join",
+      "profile": "stress",
+      "status": "ok",
+      "repeats": [
+        {
+          "ops": 43096,
+          "errors": 0,
+          "error_rate": 0,
+          "throughput_ops_per_sec": 12635.731115795908,
+          "latency_p50_ns": 2124792,
+          "latency_p95_ns": 4254583,
+          "latency_p99_ns": 203147667,
+          "bytes_per_op": 13820.079264896975,
+          "allocs_per_op": 345.9055596807128,
+          "cpu_ns_per_op": 103165.0733246705,
+          "elapsed_seconds": 3.410645542
+        }
+      ],
+      "median": {
+        "ops": 43096,
+        "errors": 0,
+        "error_rate": 0,
+        "throughput_ops_per_sec": 12635.731115795908,
+        "latency_p50_ns": 2124792,
+        "latency_p95_ns": 4254583,
+        "latency_p99_ns": 203147667,
+        "bytes_per_op": 13820.079264896975,
+        "allocs_per_op": 345.9055596807128,
+        "cpu_ns_per_op": 103165.0733246705,
+        "elapsed_seconds": 3.410645542
+      }
+    },
+    {
+      "library": "ent",
+      "scenario": "union",
+      "profile": "low",
+      "status": "na",
+      "reason": "n/a (unsupported)"
+    },
+    {
+      "library": "ent",
+      "scenario": "union",
+      "profile": "stress",
+      "status": "na",
+      "reason": "n/a (unsupported)"
+    },
+    {
+      "library": "sqlx",
+      "scenario": "insert",
+      "profile": "low",
+      "status": "ok",
+      "repeats": [
+        {
+          "ops": 1200,
+          "errors": 0,
+          "error_rate": 0,
+          "throughput_ops_per_sec": 398.9585630884443,
+          "latency_p50_ns": 2324917,
+          "latency_p95_ns": 8986875,
+          "latency_p99_ns": 17280833,
+          "bytes_per_op": 873.3866666666667,
+          "allocs_per_op": 14.015833333333333,
+          "cpu_ns_per_op": 233713.33333333334,
+          "elapsed_seconds": 3.007831166
+        }
+      ],
+      "median": {
+        "ops": 1200,
+        "errors": 0,
+        "error_rate": 0,
+        "throughput_ops_per_sec": 398.9585630884443,
+        "latency_p50_ns": 2324917,
+        "latency_p95_ns": 8986875,
+        "latency_p99_ns": 17280833,
+        "bytes_per_op": 873.3866666666667,
+        "allocs_per_op": 14.015833333333333,
+        "cpu_ns_per_op": 233713.33333333334,
+        "elapsed_seconds": 3.007831166
+      }
+    },
+    {
+      "library": "sqlx",
+      "scenario": "insert",
+      "profile": "stress",
+      "status": "ok",
+      "repeats": [
+        {
+          "ops": 61878,
+          "errors": 0,
+          "error_rate": 0,
+          "throughput_ops_per_sec": 19229.92257548927,
+          "latency_p50_ns": 3235250,
+          "latency_p95_ns": 5841000,
+          "latency_p99_ns": 10879000,
+          "bytes_per_op": 873.0975144639452,
+          "allocs_per_op": 14.008953101263778,
+          "cpu_ns_per_op": 45008.12889880087,
+          "elapsed_seconds": 3.217797667
+        }
+      ],
+      "median": {
+        "ops": 61878,
+        "errors": 0,
+        "error_rate": 0,
+        "throughput_ops_per_sec": 19229.92257548927,
+        "latency_p50_ns": 3235250,
+        "latency_p95_ns": 5841000,
+        "latency_p99_ns": 10879000,
+        "bytes_per_op": 873.0975144639452,
+        "allocs_per_op": 14.008953101263778,
+        "cpu_ns_per_op": 45008.12889880087,
+        "elapsed_seconds": 3.217797667
+      }
+    },
+    {
+      "library": "sqlx",
+      "scenario": "update",
+      "profile": "low",
+      "status": "ok",
+      "repeats": [
+        {
+          "ops": 1200,
+          "errors": 0,
+          "error_rate": 0,
+          "throughput_ops_per_sec": 398.92489740150296,
+          "latency_p50_ns": 3022250,
+          "latency_p95_ns": 9249500,
+          "latency_p99_ns": 13932292,
+          "bytes_per_op": 928.96,
+          "allocs_per_op": 15.9625,
+          "cpu_ns_per_op": 288110.8333333333,
+          "elapsed_seconds": 3.008085
+        }
+      ],
+      "median": {
+        "ops": 1200,
+        "errors": 0,
+        "error_rate": 0,
+        "throughput_ops_per_sec": 398.92489740150296,
+        "latency_p50_ns": 3022250,
+        "latency_p95_ns": 9249500,
+        "latency_p99_ns": 13932292,
+        "bytes_per_op": 928.96,
+        "allocs_per_op": 15.9625,
+        "cpu_ns_per_op": 288110.8333333333,
+        "elapsed_seconds": 3.008085
+      }
+    },
+    {
+      "library": "sqlx",
+      "scenario": "update",
+      "profile": "stress",
+      "status": "ok",
+      "repeats": [
+        {
+          "ops": 54759,
+          "errors": 0,
+          "error_rate": 0,
+          "throughput_ops_per_sec": 17090.256119074307,
+          "latency_p50_ns": 3516625,
+          "latency_p95_ns": 6571709,
+          "latency_p99_ns": 18045834,
+          "bytes_per_op": 928.3311966982596,
+          "allocs_per_op": 15.9508026077905,
+          "cpu_ns_per_op": 46632.535291002394,
+          "elapsed_seconds": 3.204106458
+        }
+      ],
+      "median": {
+        "ops": 54759,
+        "errors": 0,
+        "error_rate": 0,
+        "throughput_ops_per_sec": 17090.256119074307,
+        "latency_p50_ns": 3516625,
+        "latency_p95_ns": 6571709,
+        "latency_p99_ns": 18045834,
+        "bytes_per_op": 928.3311966982596,
+        "allocs_per_op": 15.9508026077905,
+        "cpu_ns_per_op": 46632.535291002394,
+        "elapsed_seconds": 3.204106458
+      }
+    },
+    {
+      "library": "sqlx",
+      "scenario": "delete",
+      "profile": "low",
+      "status": "ok",
+      "repeats": [
+        {
+          "ops": 1200,
+          "errors": 0,
+          "error_rate": 0,
+          "throughput_ops_per_sec": 398.94326020904396,
+          "latency_p50_ns": 3110500,
+          "latency_p95_ns": 9866208,
+          "latency_p99_ns": 13186542,
+          "bytes_per_op": 473.37333333333333,
+          "allocs_per_op": 11.015833333333333,
+          "cpu_ns_per_op": 248954.16666666666,
+          "elapsed_seconds": 3.007946542
+        }
+      ],
+      "median": {
+        "ops": 1200,
+        "errors": 0,
+        "error_rate": 0,
+        "throughput_ops_per_sec": 398.94326020904396,
+        "latency_p50_ns": 3110500,
+        "latency_p95_ns": 9866208,
+        "latency_p99_ns": 13186542,
+        "bytes_per_op": 473.37333333333333,
+        "allocs_per_op": 11.015833333333333,
+        "cpu_ns_per_op": 248954.16666666666,
+        "elapsed_seconds": 3.007946542
+      }
+    },
+    {
+      "library": "sqlx",
+      "scenario": "delete",
+      "profile": "stress",
+      "status": "ok",
+      "repeats": [
+        {
+          "ops": 55914,
+          "errors": 0,
+          "error_rate": 0,
+          "throughput_ops_per_sec": 17625.766200818565,
+          "latency_p50_ns": 2993250,
+          "latency_p95_ns": 5320459,
+          "latency_p99_ns": 202665250,
+          "bytes_per_op": 472.6683120506492,
+          "allocs_per_op": 11.002217691454733,
+          "cpu_ns_per_op": 45222.53818363916,
+          "elapsed_seconds": 3.172287625
+        }
+      ],
+      "median": {
+        "ops": 55914,
+        "errors": 0,
+        "error_rate": 0,
+        "throughput_ops_per_sec": 17625.766200818565,
+        "latency_p50_ns": 2993250,
+        "latency_p95_ns": 5320459,
+        "latency_p99_ns": 202665250,
+        "bytes_per_op": 472.6683120506492,
+        "allocs_per_op": 11.002217691454733,
+        "cpu_ns_per_op": 45222.53818363916,
+        "elapsed_seconds": 3.172287625
+      }
+    },
+    {
+      "library": "sqlx",
+      "scenario": "select",
+      "profile": "low",
+      "status": "ok",
+      "repeats": [
+        {
+          "ops": 1200,
+          "errors": 0,
+          "error_rate": 0,
+          "throughput_ops_per_sec": 398.95652375970064,
+          "latency_p50_ns": 988792,
+          "latency_p95_ns": 5305875,
+          "latency_p99_ns": 8946834,
+          "bytes_per_op": 2387.7733333333335,
+          "allocs_per_op": 55.3375,
+          "cpu_ns_per_op": 361768.3333333333,
+          "elapsed_seconds": 3.007846541
+        }
+      ],
+      "median": {
+        "ops": 1200,
+        "errors": 0,
+        "error_rate": 0,
+        "throughput_ops_per_sec": 398.95652375970064,
+        "latency_p50_ns": 988792,
+        "latency_p95_ns": 5305875,
+        "latency_p99_ns": 8946834,
+        "bytes_per_op": 2387.7733333333335,
+        "allocs_per_op": 55.3375,
+        "cpu_ns_per_op": 361768.3333333333,
+        "elapsed_seconds": 3.007846541
+      }
+    },
+    {
+      "library": "sqlx",
+      "scenario": "select",
+      "profile": "stress",
+      "status": "ok",
+      "repeats": [
+        {
+          "ops": 97751,
+          "errors": 0,
+          "error_rate": 0,
+          "throughput_ops_per_sec": 26374.548782697137,
+          "latency_p50_ns": 876959,
+          "latency_p95_ns": 1866833,
+          "latency_p99_ns": 7211792,
+          "bytes_per_op": 2347.85894773455,
+          "allocs_per_op": 54.967672964982455,
+          "cpu_ns_per_op": 44725.62940532577,
+          "elapsed_seconds": 3.706262458
+        }
+      ],
+      "median": {
+        "ops": 97751,
+        "errors": 0,
+        "error_rate": 0,
+        "throughput_ops_per_sec": 26374.548782697137,
+        "latency_p50_ns": 876959,
+        "latency_p95_ns": 1866833,
+        "latency_p99_ns": 7211792,
+        "bytes_per_op": 2347.85894773455,
+        "allocs_per_op": 54.967672964982455,
+        "cpu_ns_per_op": 44725.62940532577,
+        "elapsed_seconds": 3.706262458
+      }
+    },
+    {
+      "library": "sqlx",
+      "scenario": "join",
+      "profile": "low",
+      "status": "ok",
+      "repeats": [
+        {
+          "ops": 1200,
+          "errors": 0,
+          "error_rate": 0,
+          "throughput_ops_per_sec": 398.9582424979527,
+          "latency_p50_ns": 1359041,
+          "latency_p95_ns": 6749541,
+          "latency_p99_ns": 11464708,
+          "bytes_per_op": 9162.36,
+          "allocs_per_op": 207.5925,
+          "cpu_ns_per_op": 507652.5,
+          "elapsed_seconds": 3.007833583
+        }
+      ],
+      "median": {
+        "ops": 1200,
+        "errors": 0,
+        "error_rate": 0,
+        "throughput_ops_per_sec": 398.9582424979527,
+        "latency_p50_ns": 1359041,
+        "latency_p95_ns": 6749541,
+        "latency_p99_ns": 11464708,
+        "bytes_per_op": 9162.36,
+        "allocs_per_op": 207.5925,
+        "cpu_ns_per_op": 507652.5,
+        "elapsed_seconds": 3.007833583
+      }
+    },
+    {
+      "library": "sqlx",
+      "scenario": "join",
+      "profile": "stress",
+      "status": "ok",
+      "repeats": [
+        {
+          "ops": 70373,
+          "errors": 0,
+          "error_rate": 0,
+          "throughput_ops_per_sec": 21705.09536843176,
+          "latency_p50_ns": 1306250,
+          "latency_p95_ns": 2977250,
+          "latency_p99_ns": 201415209,
+          "bytes_per_op": 9105.853551788328,
+          "allocs_per_op": 206.66252682136616,
+          "cpu_ns_per_op": 92974.59252838447,
+          "elapsed_seconds": 3.242234084
+        }
+      ],
+      "median": {
+        "ops": 70373,
+        "errors": 0,
+        "error_rate": 0,
+        "throughput_ops_per_sec": 21705.09536843176,
+        "latency_p50_ns": 1306250,
+        "latency_p95_ns": 2977250,
+        "latency_p99_ns": 201415209,
+        "bytes_per_op": 9105.853551788328,
+        "allocs_per_op": 206.66252682136616,
+        "cpu_ns_per_op": 92974.59252838447,
+        "elapsed_seconds": 3.242234084
+      }
+    },
+    {
+      "library": "sqlx",
+      "scenario": "union",
+      "profile": "low",
+      "status": "ok",
+      "repeats": [
+        {
+          "ops": 1200,
+          "errors": 0,
+          "error_rate": 0,
+          "throughput_ops_per_sec": 398.9615032071518,
+          "latency_p50_ns": 1312500,
+          "latency_p95_ns": 7159792,
+          "latency_p99_ns": 11691709,
+          "bytes_per_op": 15887.8,
+          "allocs_per_op": 358.5316666666667,
+          "cpu_ns_per_op": 452082.5,
+          "elapsed_seconds": 3.007809
+        }
+      ],
+      "median": {
+        "ops": 1200,
+        "errors": 0,
+        "error_rate": 0,
+        "throughput_ops_per_sec": 398.9615032071518,
+        "latency_p50_ns": 1312500,
+        "latency_p95_ns": 7159792,
+        "latency_p99_ns": 11691709,
+        "bytes_per_op": 15887.8,
+        "allocs_per_op": 358.5316666666667,
+        "cpu_ns_per_op": 452082.5,
+        "elapsed_seconds": 3.007809
+      }
+    },
+    {
+      "library": "sqlx",
+      "scenario": "union",
+      "profile": "stress",
+      "status": "ok",
+      "repeats": [
+        {
+          "ops": 56560,
+          "errors": 0,
+          "error_rate": 0,
+          "throughput_ops_per_sec": 17675.350286777855,
+          "latency_p50_ns": 1734083,
+          "latency_p95_ns": 4391917,
+          "latency_p99_ns": 202196583,
+          "bytes_per_op": 15856.38062234795,
+          "allocs_per_op": 358.24908062234795,
+          "cpu_ns_per_op": 67541.0360678925,
+          "elapsed_seconds": 3.199936583
+        }
+      ],
+      "median": {
+        "ops": 56560,
+        "errors": 0,
+        "error_rate": 0,
+        "throughput_ops_per_sec": 17675.350286777855,
+        "latency_p50_ns": 1734083,
+        "latency_p95_ns": 4391917,
+        "latency_p99_ns": 202196583,
+        "bytes_per_op": 15856.38062234795,
+        "allocs_per_op": 358.24908062234795,
+        "cpu_ns_per_op": 67541.0360678925,
+        "elapsed_seconds": 3.199936583
+      }
+    }
+  ]
+}
