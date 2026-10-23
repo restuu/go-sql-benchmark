@@ -7,6 +7,8 @@ GO_ARCH   := $(shell go env GOARCH)
 HOST_ARCH := $(shell uname -m | sed -e 's/x86_64/amd64/' -e 's/aarch64/arm64/')
 
 BENCH_ARGS ?=
+# macOS idle sleep stalls a run (see .claude/PRPs/reports/p95-stability-report.md, E6); no-op elsewhere.
+KEEP_AWAKE := $(shell command -v caffeinate >/dev/null 2>&1 && echo 'caffeinate -i')
 
 .PHONY: arch-check db-up db-down db-reset db-seed db-check build vet test test-db bench bench-cmp report gen gen-sqlc gen-ent gen-jet gen-check
 
@@ -44,7 +46,7 @@ test-db: db-up
 	go test -p 1 -count=1 -run Integration ./... # one package at a time: they all reseed the same DB
 
 bench: arch-check db-up
-	go run ./cmd/bench $(BENCH_ARGS)
+	$(KEEP_AWAKE) go run ./cmd/bench $(BENCH_ARGS)
 
 bench-cmp:
 	go run ./cmd/benchcmp $(A) $(B)
