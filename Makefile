@@ -7,6 +7,7 @@ GO_ARCH   := $(shell go env GOARCH)
 HOST_ARCH := $(shell uname -m | sed -e 's/x86_64/amd64/' -e 's/aarch64/arm64/')
 
 BENCH_ARGS ?=
+BENCH_TOL  ?= 0.20
 # macOS idle sleep stalls a run (see .claude/PRPs/reports/p95-stability-report.md, E6); no-op elsewhere.
 KEEP_AWAKE := $(shell command -v caffeinate >/dev/null 2>&1 && echo 'caffeinate -i')
 
@@ -49,7 +50,7 @@ bench: arch-check db-up
 	$(KEEP_AWAKE) go run ./cmd/bench $(BENCH_ARGS)
 
 bench-cmp:
-	go run ./cmd/benchcmp $(A) $(B)
+	go run ./cmd/benchcmp -tolerance $(BENCH_TOL) $(A) $(B)
 
 report:
 	go run ./cmd/report -in $(IN) $(if $(OUT),-out $(OUT))

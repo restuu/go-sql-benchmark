@@ -3,6 +3,7 @@ package report
 import (
 	"math"
 	"reflect"
+	"slices"
 	"testing"
 
 	"github.com/restuu/go-sql-benchmark/internal/result"
@@ -258,6 +259,41 @@ func TestCompetitionRanks(t *testing.T) {
 			// Assert
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Fatalf("competitionRanks() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestTopLibraries(t *testing.T) {
+	// seven ranked libraries, g best to a worst on every metric except bytes, where a is best
+	var ladder []result.Cell
+	for i, name := range []string{"g", "f", "e", "d", "c", "b", "a"} {
+		p := int64(10 * (i + 1))
+		ladder = append(ladder, okCell(name, "select", "low", p, float64(100-p), float64(p)))
+	}
+	tests := []struct {
+		name    string
+		cells   []result.Cell
+		weights Weights
+		want    []string
+	}{
+		{"keeps the best five and skips an n/a library", append(slices.Clone(ladder), naCell("z", "select", "low")), equalWeights, []string{"g", "f", "e", "d", "c"}},
+		{"p95 only", ladder, Weights{P95: 1}, []string{"g", "f", "e", "d", "c"}},
+		{"bytes only flips the order", ladder, Weights{BytesPerOp: 1}, []string{"a", "b", "c", "d", "e"}},
+		{"fewer than five ranked", ladder[:3], equalWeights, []string{"g", "f", "e"}},
+		{"nothing ranked", []result.Cell{naCell("z", "select", "low")}, equalWeights, []string{}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
+			run := runOf(tt.cells...)
+
+			// Act
+			got := TopLibraries(run, tt.weights)
+
+			// Assert
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Fatalf("TopLibraries() = %v, want %v", got, tt.want)
 			}
 		})
 	}

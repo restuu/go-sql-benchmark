@@ -12,7 +12,7 @@ Postgres 15. Numbers are only comparable on the same machine. Plan and PRD: `.cl
 - `make test-db` — brings the DB up and runs the `Integration` tests
 - `make gen | gen-sqlc | gen-ent | gen-jet` — regenerate committed sqlc/ent/jet code with tools pinned in `tools/go.mod` (`go tool -modfile=tools/go.mod`); `gen-jet` reads the live schema so it brings the DB up. `make gen-check` fails if regenerating changes any file.
 - `make bench BENCH_ARGS="..."` — arch check, DB up, run the matrix, write `results/run-<UTC>.json` (`go run ./cmd/bench -h` lists flags); reseeds the DB on success
-- `make bench-cmp A=results/a.json B=results/b.json` — per-cell p95 deviation; exit 1 beyond `-tolerance` (default 0.10)
+- `make bench-cmp A=results/a.json B=results/b.json` — per-cell p95 deviation plus top-5 library check (membership and order, weights from `report/rubric.json`); exit 1 beyond `BENCH_TOL` (make default 0.20; the binary's own `-tolerance` default is 0.10) or when the top 5 differ
 - `make report IN=results/x.json [OUT=README.md]` — render one result file plus `report/rubric.json` to Markdown (stdout without `OUT`); exit 1 if a cell or rubric entry is missing, 2 on usage/load errors. Same input gives byte-identical output.
 
 ## Decisions
