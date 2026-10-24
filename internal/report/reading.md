@@ -10,4 +10,4 @@ Each number is compared with plain `database/sql`, Go's built-in way to talk to 
 
 So "p95 1.04x, B/op 1.43x, CPU ns/op 1.03x" reads: this library's calls take 4% longer, use 43% more memory and use 3% more processor time than `database/sql`.
 
-A library's **score** combines its three ratios over every case into one number (see the [glossary](#glossary) for how). `1.00` is the same as `database/sql`, `2.00` is twice as costly, `0.50` half. Lower is better. Other terms, such as scenario, load profile and ORM, are in the [glossary](#glossary).
+A library's **score** combines its three ratios over every scored case into one number (see the [glossary](#glossary) for how). `1.00` is the same as `database/sql`, `2.00` is twice as costly, `0.50` half. Lower is better. Other terms, such as scenario, load profile and ORM, are in the [glossary](#glossary).

@@ -96,13 +96,27 @@ type libScore struct {
 
 type ranking struct{ libs []libScore }
 
-// rankCells scores every library on p95, B/op and CPU ns/op as the ratio to the baseline in each
-// (scenario, profile), combined by a weighted geometric mean. A ratio keeps the size of a
+// unscoredScenario is measured and reported on its own but kept out of every score: not every
+// library can express it natively, so a score that included it would cover different cases.
+const unscoredScenario = bench.ScenarioUnion
+
+// scoredScenarios returns bench.AllScenarios without the unscored one, in report order.
+func scoredScenarios() []bench.Scenario {
+	return slices.DeleteFunc(slices.Clone(bench.AllScenarios), func(s bench.Scenario) bool { return s == unscoredScenario })
+}
+
+// rankCells scores every library on the scored scenarios; see rankScenarios.
+func rankCells(run result.Run, w Weights, guests map[string]bool) ranking {
+	return rankScenarios(run, w, guests, scoredScenarios())
+}
+
+// rankScenarios scores every library on p95, B/op and CPU ns/op as the ratio to the baseline in each
+// (scenario, profile) of the given scenarios, combined by a weighted geometric mean. A ratio keeps the size of a
 // difference (1% slower is 1.01, not one place lower), and the score of a library does not depend
 // on which other libraries are in the run. Cells are visited in a fixed order so the
 // floating-point sums do not depend on the order of run.Cells. Libraries in guests are honorable
 // mentions: scored the same way but left out of top and rest.
-func rankCells(run result.Run, w Weights, guests map[string]bool) ranking {
+func rankScenarios(run result.Run, w Weights, guests map[string]bool, scenarios []bench.Scenario) ranking {
 	idx := indexCells(run)
 	names := libraryNames(run)
 	scores := make([]libScore, len(names))
@@ -111,7 +125,7 @@ func rankCells(run result.Run, w Weights, guests map[string]bool) ranking {
 		scores[i].guest = guests[n]
 	}
 	for _, p := range run.Config.Profiles {
-		for _, s := range bench.AllScenarios {
+		for _, s := range scenarios {
 			scoreOneCell(idx, scores, string(s), p.Name)
 		}
 	}
@@ -234,13 +248,29 @@ func competitionRanks(libs []libScore) []int {
 // rest returns every pool library not in top(n), including unranked ones.
 func (r ranking) rest(n int) []libScore { return r.pool()[len(r.top(n)):] }
 
-// TopLibraries returns the names of the top-ranked libraries of a run, best first, using the
+// ScoredLibrary is a library name with its score in one run.
+type ScoredLibrary struct {
+	Name  string
+	Score float64
+}
+
+// TopScores returns the top-ranked libraries of a run with their scores, best first, using the
 // same ranking as the report; honorable mentions are left out.
-func TopLibraries(run result.Run, rb Rubric) []string {
+func TopScores(run result.Run, rb Rubric) []ScoredLibrary {
 	top := rankCells(run, rb.Weights, rb.honorableMentions()).top(topCount)
+	out := make([]ScoredLibrary, len(top))
+	for i, l := range top {
+		out[i] = ScoredLibrary{Name: l.library, Score: l.score}
+	}
+	return out
+}
+
+// TopLibraries returns the names of the top-ranked libraries of a run, best first; see TopScores.
+func TopLibraries(run result.Run, rb Rubric) []string {
+	top := TopScores(run, rb)
 	names := make([]string, len(top))
 	for i, l := range top {
-		names[i] = l.library
+		names[i] = l.Name
 	}
 	return names
 }

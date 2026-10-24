@@ -47,6 +47,8 @@ func TestLoadRubric(t *testing.T) {
 		{"valid", validRubric, ""},
 		{"honorable mention with a reason", strings.Replace(validRubric, `"module": "ent"`, `"module": "ent", "honorable_mention": "Postgres only"`, 1), ""},
 		{"honorable mention reason with a newline", strings.Replace(validRubric, `"module": "ent"`, `"module": "ent", "honorable_mention": "a\nb"`, 1), "honorable_mention"},
+		{"feature note flag", strings.Replace(validRubric, `"note": "first"`, `"note": "first", "feature": true`, 1), ""},
+		{"feature note flag must be a bool", strings.Replace(validRubric, `"note": "first"`, `"note": "first", "feature": "yes"`, 1), "parse"},
 		{"unknown field", strings.Replace(validRubric, `"methodology"`, `"methodolgy"`, 1), "unknown field"},
 		{"invalid json", `{`, "parse"},
 		{"duplicate library", strings.Replace(validRubric, `"name": "ent"`, `"name": "database_sql"`, 1), "duplicate library"},

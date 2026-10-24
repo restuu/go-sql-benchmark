@@ -159,7 +159,8 @@
     {
       "library": "ent",
       "scenario": "join",
-      "note": "ent JOIN is edge eager-loading: two queries, not one SQL JOIN."
+      "note": "ent JOIN is edge eager-loading: two queries, not one SQL JOIN.",
+      "feature": true
     }
   ]
 }

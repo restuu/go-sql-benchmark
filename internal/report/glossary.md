@@ -32,7 +32,7 @@ Plain-language meanings of the terms used in this report. `REPORT.md` uses the s
 - **delete**: remove one row.
 - **select**: read one row by its id.
 - **join**: read the orders of one customer together with that customer's details, which live in two tables (10 rows).
-- **union**: combine two lists, the customers and the suppliers of one city, into one result (40 rows).
+- **union**: combine two lists, the customers and the suppliers of one city, into one result (40 rows). It is reported separately and is not part of the score, because some libraries cannot express it without hand-written SQL.
 - **load profile**: how hard the database is pushed. **low** is a quiet application: 4 callers, each pausing 10 ms between calls. **stress** is a busy one: 100 callers hitting the database without pausing.
 - **low**: the quiet load profile (4 workers, 10 ms between calls).
 - **stress**: the busy load profile (100 workers, no pauses).

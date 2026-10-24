@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/restuu/go-sql-benchmark/internal/bench"
 	"github.com/restuu/go-sql-benchmark/internal/result"
 )
 
@@ -126,8 +127,8 @@ func TestRankCells(t *testing.T) {
 			cells: []result.Cell{
 				okCell(ref, "select", "low", 10, 10, 10),
 				okCell("b", "select", "low", 20, 20, 20),
-				okCell(ref, "union", "low", 10, 10, 10),
-				naCell("b", "union", "low"),
+				okCell(ref, "join", "low", 10, 10, 10),
+				naCell("b", "join", "low"),
 			},
 			weights:   equalWeights,
 			wantOrder: []string{ref, "b"},
@@ -166,8 +167,8 @@ func TestRankCells(t *testing.T) {
 		{
 			name: "library with only na cases sorts last with an infinite score",
 			cells: []result.Cell{
-				naCell("z", "union", "low"),
-				okCell(ref, "union", "low", 10, 10, 10),
+				naCell("z", "join", "low"),
+				okCell(ref, "join", "low", 10, 10, 10),
 			},
 			weights:   equalWeights,
 			wantOrder: []string{ref, "z"},
@@ -182,8 +183,8 @@ func TestRankCells(t *testing.T) {
 			cells: []result.Cell{
 				okCell(ref, "select", "low", 10, 10, 10),
 				okCell("b", "select", "low", 20, 20, 20),
-				naCell(ref, "union", "low"),
-				okCell("b", "union", "low", 20, 20, 20),
+				naCell(ref, "update", "low"),
+				okCell("b", "update", "low", 20, 20, 20),
 				withErrorRate(okCell(ref, "join", "low", 10, 10, 10), 0.5),
 				okCell("b", "join", "low", 20, 20, 20),
 			},
@@ -260,6 +261,90 @@ func TestRankCells(t *testing.T) {
 				tt.check(t, r)
 			}
 		})
+	}
+}
+
+func TestRankCellsLeavesOutTheUnscoredScenario(t *testing.T) {
+	tests := []struct {
+		name  string
+		cells []result.Cell
+		check func(t *testing.T, r ranking)
+	}{
+		{
+			name: "union is left out of the score and of total",
+			cells: []result.Cell{
+				okCell(ref, "select", "low", 10, 10, 10),
+				okCell("b", "select", "low", 20, 20, 20),
+				okCell(ref, "union", "low", 10, 10, 10),
+				okCell("b", "union", "low", 1000, 1000, 1000),
+			},
+			check: func(t *testing.T, r ranking) {
+				b := scoreOf(t, r, "b")
+				if !near(b.score, 2) || b.total != 1 || b.ranked != 1 {
+					t.Fatalf("b = %+v, want score 2 over 1 case", b)
+				}
+			},
+		},
+		{
+			name: "a library n/a on union is not penalised against one that runs it",
+			cells: []result.Cell{
+				okCell(ref, "select", "low", 10, 10, 10),
+				okCell(ref, "union", "low", 10, 10, 10),
+				okCell("b", "select", "low", 20, 20, 20),
+				naCell("b", "union", "low"),
+				okCell("c", "select", "low", 20, 20, 20),
+				okCell("c", "union", "low", 1000, 1000, 1000),
+			},
+			check: func(t *testing.T, r ranking) {
+				b, c := scoreOf(t, r, "b"), scoreOf(t, r, "c")
+				if !near(b.score, c.score) || b.total != c.total {
+					t.Fatalf("b = %+v, c = %+v, want equal scores over equal cases", b, c)
+				}
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
+			run := runOf(tt.cells...)
+
+			// Act
+			r := rankCells(run, equalWeights, nil)
+
+			// Assert
+			tt.check(t, r)
+		})
+	}
+}
+
+func TestRankScenarios(t *testing.T) {
+	// Arrange
+	run := runOf(
+		okCell(ref, "select", "low", 10, 10, 10),
+		okCell(ref, "union", "low", 10, 10, 10),
+		okCell("b", "select", "low", 20, 20, 20),
+		okCell("b", "union", "low", 50, 50, 50),
+	)
+
+	// Act
+	r := rankScenarios(run, equalWeights, nil, []bench.Scenario{bench.ScenarioUnion})
+
+	// Assert
+	if b := scoreOf(t, r, "b"); !near(b.score, 5) || b.total != 1 {
+		t.Fatalf("b = %+v, want score 5 over the union case only", b)
+	}
+}
+
+func TestScoredScenarios(t *testing.T) {
+	// Arrange
+	want := []bench.Scenario{bench.ScenarioInsert, bench.ScenarioUpdate, bench.ScenarioDelete, bench.ScenarioSelect, bench.ScenarioJoin}
+
+	// Act
+	got := scoredScenarios()
+
+	// Assert
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("scoredScenarios() = %v, want %v", got, want)
 	}
 }
 
@@ -404,6 +489,27 @@ func TestTopLibraries(t *testing.T) {
 				t.Fatalf("TopLibraries() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestTopLibrariesIgnoresUnion(t *testing.T) {
+	// Arrange: the two runs differ only in the union cases
+	scored := []result.Cell{
+		okCell(ref, "select", "low", 10, 10, 10),
+		okCell("a", "select", "low", 11, 11, 11),
+		okCell("b", "select", "low", 12, 12, 12),
+	}
+	slowA := append(append([]result.Cell{}, scored...), okCell(ref, "union", "low", 10, 10, 10), okCell("a", "union", "low", 900, 900, 900))
+	slowB := append(append([]result.Cell{}, scored...), okCell(ref, "union", "low", 10, 10, 10), okCell("b", "union", "low", 900, 900, 900))
+
+	// Act
+	gotA := TopLibraries(runOf(slowA...), Rubric{Weights: equalWeights})
+	gotB := TopLibraries(runOf(slowB...), Rubric{Weights: equalWeights})
+
+	// Assert
+	want := []string{ref, "a", "b"}
+	if !reflect.DeepEqual(gotA, want) || !reflect.DeepEqual(gotB, want) {
+		t.Fatalf("TopLibraries() = %v and %v, want %v for both", gotA, gotB, want)
 	}
 }
 

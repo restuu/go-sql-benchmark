@@ -113,7 +113,11 @@ func TestRenderContent(t *testing.T) {
 		"n/a (unsupported)",
 		"Fixture methodology line two with a | pipe.",
 		"baseline",
-		"judged on 10 of 12 cases",
+		"| 10/10 |",
+		"## Feature matrix",
+		"## Union",
+		"Union is measured but not scored",
+		"1. ent JOIN is edge eager-loading",
 		"**latency** (p95",
 		"**memory** (B/op",
 		"**CPU** (CPU ns/op",
@@ -132,6 +136,15 @@ func TestRenderContent(t *testing.T) {
 	top, pros := strings.Index(got, "## Top 5"), strings.Index(got, "## Pros and cons")
 	if top < 0 || pros < 0 || top > pros {
 		t.Errorf("top 5 (%d) must come before pros and cons (%d)", top, pros)
+	}
+	doc, err := Render(run, rb, DefaultFiles)
+	if err != nil {
+		t.Fatalf("Render() error = %v", err)
+	}
+	for heading, want := range map[string][2]int{"## Feature matrix": {1, 1}, "## Union": {1, 0}} {
+		if gotSummary, gotDetails := strings.Count(doc.Summary, heading), strings.Count(doc.Details, heading); gotSummary != want[0] || gotDetails != want[1] {
+			t.Errorf("%q appears %d times in the summary and %d in the details, want %d and %d", heading, gotSummary, gotDetails, want[0], want[1])
+		}
 	}
 	for _, scenario := range []string{"insert", "update", "delete", "select", "join", "union"} {
 		if strings.Count(got, "#### "+scenario+"\n") != 2 {
