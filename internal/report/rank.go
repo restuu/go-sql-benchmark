@@ -248,13 +248,29 @@ func competitionRanks(libs []libScore) []int {
 // rest returns every pool library not in top(n), including unranked ones.
 func (r ranking) rest(n int) []libScore { return r.pool()[len(r.top(n)):] }
 
-// TopLibraries returns the names of the top-ranked libraries of a run, best first, using the
+// ScoredLibrary is a library name with its score in one run.
+type ScoredLibrary struct {
+	Name  string
+	Score float64
+}
+
+// TopScores returns the top-ranked libraries of a run with their scores, best first, using the
 // same ranking as the report; honorable mentions are left out.
-func TopLibraries(run result.Run, rb Rubric) []string {
+func TopScores(run result.Run, rb Rubric) []ScoredLibrary {
 	top := rankCells(run, rb.Weights, rb.honorableMentions()).top(topCount)
+	out := make([]ScoredLibrary, len(top))
+	for i, l := range top {
+		out[i] = ScoredLibrary{Name: l.library, Score: l.score}
+	}
+	return out
+}
+
+// TopLibraries returns the names of the top-ranked libraries of a run, best first; see TopScores.
+func TopLibraries(run result.Run, rb Rubric) []string {
+	top := TopScores(run, rb)
 	names := make([]string, len(top))
 	for i, l := range top {
-		names[i] = l.library
+		names[i] = l.Name
 	}
 	return names
 }

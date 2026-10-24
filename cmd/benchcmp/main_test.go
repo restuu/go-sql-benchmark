@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restuu/go-sql-benchmark/internal/report"
 	"github.com/restuu/go-sql-benchmark/internal/result"
 )
 
@@ -161,5 +162,41 @@ func TestRunNothingRanked(t *testing.T) {
 	// Assert
 	if code != exitExceeded || !strings.Contains(out.String(), "NO RANKED LIBRARIES") {
 		t.Fatalf("run() = %d, stdout %q; want exit %d and NO RANKED LIBRARIES", code, out.String(), exitExceeded)
+	}
+}
+
+func TestSameTop(t *testing.T) {
+	lib := func(name string, score float64) report.ScoredLibrary {
+		return report.ScoredLibrary{Name: name, Score: score}
+	}
+	tests := []struct {
+		name string
+		a, b []report.ScoredLibrary
+		want bool
+	}{
+		{"identical", []report.ScoredLibrary{lib("x", 1), lib("y", 2)}, []report.ScoredLibrary{lib("x", 1), lib("y", 2)}, true},
+		{"flip within the gap in both runs is a tie",
+			[]report.ScoredLibrary{lib("x", 1.09), lib("y", 1.10)}, []report.ScoredLibrary{lib("y", 1.07), lib("x", 1.08)}, true},
+		{"flip clear in the first run",
+			[]report.ScoredLibrary{lib("x", 1.0), lib("y", 1.5)}, []report.ScoredLibrary{lib("y", 1.49), lib("x", 1.5)}, false},
+		{"flip clear in the second run",
+			[]report.ScoredLibrary{lib("x", 1.49), lib("y", 1.5)}, []report.ScoredLibrary{lib("y", 1.0), lib("x", 1.5)}, false},
+		{"different member", []report.ScoredLibrary{lib("x", 1), lib("y", 1.01)}, []report.ScoredLibrary{lib("x", 1), lib("z", 1.01)}, false},
+		{"different length", []report.ScoredLibrary{lib("x", 1), lib("y", 1.01)}, []report.ScoredLibrary{lib("x", 1)}, false},
+		{"both empty", nil, nil, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
+			const gap = 0.02
+
+			// Act
+			got := sameTop(tt.a, tt.b, gap)
+
+			// Assert
+			if got != tt.want {
+				t.Fatalf("sameTop() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

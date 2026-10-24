@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"slices"
 	"time"
 
 	"github.com/restuu/go-sql-benchmark/internal/report"
@@ -18,6 +17,7 @@ const (
 	exitExceeded   = 1
 	exitUsage      = 2
 	defaultTol     = 0.10
+	defaultGap     = 0.02
 	defaultRubric  = "report/rubric.json"
 	percentDisplay = 100
 )
@@ -27,18 +27,19 @@ func main() {
 }
 
 // run returns the process exit code: 0 within tolerance and the same top 5, 1 beyond tolerance, on a missing
-// cell or when the top 5 (membership or order) differ, 2 on usage or load errors. The top 5 is
-// scored without union; the per-case p95 comparison still covers every case.
+// cell or when the top 5 differ (see sameTop), 2 on usage or load errors. The top 5 is scored without
+// union; the per-case p95 comparison still covers every case.
 func run(args []string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("benchcmp", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	tolerance := fs.Float64("tolerance", defaultTol, "maximum relative p95 difference per cell")
+	scoreGap := fs.Float64("score-gap", defaultGap, "scores closer than this are tied: their order may differ between the runs")
 	rubricPath := fs.String("rubric", defaultRubric, "rubric file whose weights rank the libraries")
 	if err := fs.Parse(args); err != nil {
 		return exitUsage
 	}
-	if fs.NArg() != 2 || !(*tolerance >= 0) { // also rejects NaN
-		fmt.Fprintln(stderr, "usage: benchcmp [-tolerance 0.10] [-rubric report/rubric.json] a.json b.json (tolerance must be >= 0)")
+	if fs.NArg() != 2 || !(*tolerance >= 0) || !(*scoreGap >= 0) { // also rejects NaN
+		fmt.Fprintln(stderr, "usage: benchcmp [-tolerance 0.10] [-score-gap 0.02] [-rubric report/rubric.json] a.json b.json (tolerance and score-gap must be >= 0)")
 		return exitUsage
 	}
 	a, err := result.Load(fs.Arg(0))
@@ -66,18 +67,55 @@ func run(args []string, stdout, stderr io.Writer) int {
 		}
 	}
 
-	topA, topB := report.TopLibraries(a, rb), report.TopLibraries(b, rb)
+	topA, topB := report.TopScores(a, rb), report.TopScores(b, rb)
 	switch {
 	case len(topA) == 0 && len(topB) == 0: // an empty ranking proves nothing about stability
 		fmt.Fprintln(stdout, "NO RANKED LIBRARIES in either run")
 		return exitExceeded
-	case slices.Equal(topA, topB):
-		fmt.Fprintf(stdout, "top ranking unchanged: %v\n", topA)
+	case sameTop(topA, topB, *scoreGap):
+		fmt.Fprintf(stdout, "top ranking unchanged: %v\n", names(topA))
 		return code
 	default:
-		fmt.Fprintf(stdout, "TOP RANKING DIFFERS: %v vs %v\n", topA, topB)
+		fmt.Fprintf(stdout, "TOP RANKING DIFFERS: %v vs %v\n", names(topA), names(topB))
 		return exitExceeded
 	}
+}
+
+// sameTop reports whether two top lists hold the same libraries and agree on the order of every
+// pair whose scores are more than gap apart in either run. Two libraries closer than that in both
+// runs are tied, so swapping them is noise rather than a change.
+func sameTop(a, b []report.ScoredLibrary, gap float64) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	posB := make(map[string]int, len(b))
+	for i, l := range b {
+		posB[l.Name] = i
+	}
+	for i, x := range a {
+		if _, ok := posB[x.Name]; !ok {
+			return false
+		}
+		for _, y := range a[i+1:] {
+			if _, ok := posB[y.Name]; !ok {
+				return false
+			}
+			flipped := posB[y.Name] < posB[x.Name]
+			outsideGap := y.Score-x.Score > gap || b[posB[x.Name]].Score-b[posB[y.Name]].Score > gap
+			if flipped && outsideGap {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func names(libs []report.ScoredLibrary) []string {
+	out := make([]string, len(libs))
+	for i, l := range libs {
+		out[i] = l.Name
+	}
+	return out
 }
 
 func format(d result.Deviation) string {
