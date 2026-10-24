@@ -40,8 +40,8 @@ We'll know we're right when `make bench` on the reference machine regenerates th
 
 ## Open Questions
 
-- [ ] Weighting of the top-5 composite score (default: equal-weight average of per-scenario ranks on p95, B/op, CPU time).
-- [ ] Stress parameters: worker count (default 100), duration, dataset size.
+- [x] Weighting of the top-5 composite score: resolved 2026-10-24, equal-weight average of per-scenario ranks on p95, B/op, CPU time (`report/rubric.json` weights 1/1/1). A library with `na` cells is ranked on its remaining cells only; the report shows the ranked-cell count and the methodology says so.
+- [x] Stress parameters: resolved 2026-10-24, kept the defaults: 100 workers, unpaced, 2 s warm-up, 10 s window, 400k pre-inserted DELETE ids.
 - [ ] Do the 14 extra libraries share the same stress config as the core 6?
 - [ ] Is "last commit in 2026" a good-enough activity filter (dependency-bump pushes count)?
 
@@ -136,7 +136,7 @@ Core 6 libraries x 6 scenarios x 2 profiles, JSON results, generated README with
 | 2 | Runner & reference adapter | `Adapter` interface, low/stress profiles, metrics capture, JSON output, `database/sql` adapter for all 6 scenarios | complete | - | 1 | [plan](../plans/completed/runner-and-reference-adapter.plan.md), [report](../reports/runner-and-reference-adapter-report.md) (p95 stability not met on this machine; recorded), [p95 investigation](../reports/p95-stability-report.md) (environmental; p95 gate relaxed to about 20% plus top-5 rank stability, decided by the user) |
 | 3 | Core adapters | sqlc, sqlx, gorm, ent, go-jet for all scenarios + cross-adapter correctness check | complete | with 4 | 2 | [plan](../plans/completed/core-adapters.plan.md), [report](../reports/core-adapters-report.md) |
 | 4 | Report generator | JSON -> README: tables, delta vs baseline, top-5 reasoning, pros/cons from data + rubric file | complete | with 3 | 2 | [plan](../plans/completed/report-generator.plan.md), [report](../reports/report-generator-report.md) |
-| 5 | Full run & publish | Full run on reference machine, stability check (2 runs), commit README | pending | - | 3, 4 | - |
+| 5 | Full run & publish | Full run on reference machine, stability check (2 runs), commit README | complete (stability gate not met, see report) | - | 3, 4 | [report](../reports/full-run-report.md) |
 | 6 | Extra libraries | 14 active-in-2026 libs, same scenarios, "n/a" handling | pending | - | 5 | - |
 
 ### Phase Details
