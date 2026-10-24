@@ -10,12 +10,13 @@ import (
 	"github.com/restuu/go-sql-benchmark/internal/result"
 )
 
-var update = flag.Bool("update", false, "rewrite testdata/report.golden.md")
+var update = flag.Bool("update", false, "rewrite the testdata golden files")
 
 const (
-	fixturePath = "testdata/fixture.json"
-	rubricPath  = "testdata/rubric.json"
-	goldenPath  = "testdata/report.golden.md"
+	fixturePath       = "testdata/fixture.json"
+	rubricPath        = "testdata/rubric.json"
+	summaryGoldenPath = "testdata/summary.golden.md"
+	detailsGoldenPath = "testdata/details.golden.md"
 )
 
 func loadFixture(t *testing.T) (result.Run, Rubric) {
@@ -72,23 +73,25 @@ func TestRenderGolden(t *testing.T) {
 	run = withTwoRepeats(t, run)
 
 	// Act
-	got, err := Render(run, rb)
+	doc, err := Render(run, rb, DefaultFiles)
 
 	// Assert
 	if err != nil {
 		t.Fatalf("Render() error = %v", err)
 	}
-	if *update {
-		if err := os.WriteFile(goldenPath, []byte(got), 0o644); err != nil {
-			t.Fatal(err)
+	for _, g := range []struct{ path, got string }{{summaryGoldenPath, doc.Summary}, {detailsGoldenPath, doc.Details}} {
+		if *update {
+			if err := os.WriteFile(g.path, []byte(g.got), 0o644); err != nil {
+				t.Fatal(err)
+			}
 		}
-	}
-	want, err := os.ReadFile(goldenPath)
-	if err != nil {
-		t.Fatalf("read golden (run with -update to create): %v", err)
-	}
-	if got != string(want) {
-		t.Fatalf("report differs from %s (run with -update and review the diff)", goldenPath)
+		want, err := os.ReadFile(g.path)
+		if err != nil {
+			t.Fatalf("read golden (run with -update to create): %v", err)
+		}
+		if g.got != string(want) {
+			t.Fatalf("report differs from %s (run with -update and review the diff)", g.path)
+		}
 	}
 }
 
@@ -97,11 +100,11 @@ func TestRenderContent(t *testing.T) {
 	run, rb := loadFixture(t)
 
 	// Act
-	got, err := Render(run, rb)
+	got, err := renderFull(run, rb)
 
 	// Assert
 	if err != nil {
-		t.Fatalf("Render() error = %v", err)
+		t.Fatalf("renderFull() error = %v", err)
 	}
 	for _, want := range []string{
 		"darwin/arm64", "go1.27.3", "15.19", "pgx v5.11.0", "v0.14.6",
@@ -145,9 +148,9 @@ func TestRenderIsDeterministic(t *testing.T) {
 	slices.Reverse(reversed.Cells)
 
 	// Act
-	first, err1 := Render(run, rb)
-	second, err2 := Render(run, rb)
-	fromReversed, err3 := Render(reversed, rb)
+	first, err1 := renderFull(run, rb)
+	second, err2 := renderFull(run, rb)
+	fromReversed, err3 := renderFull(reversed, rb)
 
 	// Assert
 	if err1 != nil || err2 != nil || err3 != nil {
@@ -211,11 +214,11 @@ func TestRenderErrors(t *testing.T) {
 			tt.mutate(&r, &b)
 
 			// Act
-			_, err := Render(r, b)
+			_, err := renderFull(r, b)
 
 			// Assert
 			if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
-				t.Fatalf("Render() error = %v, want containing %q", err, tt.wantErr)
+				t.Fatalf("renderFull() error = %v, want containing %q", err, tt.wantErr)
 			}
 		})
 	}
@@ -231,11 +234,11 @@ func TestRenderWithoutBaseline(t *testing.T) {
 	run.Cells = without(run.Cells, func(c result.Cell) bool { return c.Library == baselineLibrary })
 
 	// Act
-	got, err := Render(run, rb)
+	got, err := renderFull(run, rb)
 
 	// Assert
 	if err != nil {
-		t.Fatalf("Render() error = %v", err)
+		t.Fatalf("renderFull() error = %v", err)
 	}
 	if !strings.Contains(got, "Nothing could be ranked") {
 		t.Error("a run without database_sql has no ratios, the Top 5 should say so")
@@ -258,11 +261,11 @@ func TestRenderLibraryWithOnlyNACells(t *testing.T) {
 	}
 
 	// Act
-	got, err := Render(run, rb)
+	got, err := renderFull(run, rb)
 
 	// Assert
 	if err != nil {
-		t.Fatalf("Render() error = %v", err)
+		t.Fatalf("renderFull() error = %v", err)
 	}
 	if !strings.Contains(got, "sqlx: score -") {
 		t.Errorf("all-n/a library should print a dash score:\n%s", got)
@@ -274,11 +277,11 @@ func TestRenderEmptyProsAndCons(t *testing.T) {
 	run, rb := loadFixture(t)
 
 	// Act
-	got, err := Render(run, rb)
+	got, err := renderFull(run, rb)
 
 	// Assert
 	if err != nil {
-		t.Fatalf("Render() error = %v", err)
+		t.Fatalf("renderFull() error = %v", err)
 	}
 	const heading = "### ent\n"
 	start := strings.Index(got, heading)
@@ -302,11 +305,11 @@ func TestRenderFlexibility(t *testing.T) {
 	run, rb := loadFixture(t)
 
 	// Act
-	got, err := Render(run, rb)
+	got, err := renderFull(run, rb)
 
 	// Assert
 	if err != nil {
-		t.Fatalf("Render() error = %v", err)
+		t.Fatalf("renderFull() error = %v", err)
 	}
 	start := strings.Index(got, "## Flexibility")
 	if start < 0 {
@@ -345,11 +348,11 @@ func TestRenderFlexibilityDoesNotChangeRanking(t *testing.T) {
 	}
 
 	// Act
-	before, err := Render(run, rb)
+	before, err := renderFull(run, rb)
 	if err != nil {
 		t.Fatal(err)
 	}
-	after, err := Render(run, flipped)
+	after, err := renderFull(run, flipped)
 
 	// Assert
 	if err != nil {
@@ -406,9 +409,9 @@ func TestRenderQualitativeSections(t *testing.T) {
 		}, "ent/ent"},
 	}
 	run, rb := loadFixture(t)
-	got, err := Render(run, rb)
+	got, err := renderFull(run, rb)
 	if err != nil {
-		t.Fatalf("Render() error = %v", err)
+		t.Fatalf("renderFull() error = %v", err)
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -448,11 +451,11 @@ func TestRenderQualitativeDoesNotChangeRanking(t *testing.T) {
 	}
 
 	// Act
-	before, err := Render(run, rb)
+	before, err := renderFull(run, rb)
 	if err != nil {
 		t.Fatal(err)
 	}
-	after, err := Render(run, changed)
+	after, err := renderFull(run, changed)
 
 	// Assert
 	if err != nil {
@@ -479,11 +482,11 @@ func TestRenderQualitativeSubsetRun(t *testing.T) {
 	run.Cells = cells
 
 	// Act
-	got, err := Render(run, rb)
+	got, err := renderFull(run, rb)
 
 	// Assert
 	if err != nil {
-		t.Fatalf("Render() error = %v", err)
+		t.Fatalf("renderFull() error = %v", err)
 	}
 	for _, heading := range []string{"## Ease of use (qualitative)", "## Learning curve (qualitative)", "## Community support (facts)"} {
 		body := section(t, got, heading)
@@ -507,11 +510,11 @@ func TestRenderHonorableMention(t *testing.T) {
 	}
 
 	// Act
-	got, err := Render(run, rb)
+	got, err := renderFull(run, rb)
 
 	// Assert
 	if err != nil {
-		t.Fatalf("Render() error = %v", err)
+		t.Fatalf("renderFull() error = %v", err)
 	}
 	top, mention, pros := strings.Index(got, "## Top 5"), strings.Index(got, "## Honorable mention"), strings.Index(got, "## Pros and cons")
 	if top < 0 || mention < top || pros < mention {
@@ -537,11 +540,11 @@ func TestRenderWithoutHonorableMention(t *testing.T) {
 	run, rb := loadFixture(t)
 
 	// Act
-	got, err := Render(run, rb)
+	got, err := renderFull(run, rb)
 
 	// Assert
 	if err != nil {
-		t.Fatalf("Render() error = %v", err)
+		t.Fatalf("renderFull() error = %v", err)
 	}
 	if strings.Contains(got, "Honorable mention") {
 		t.Errorf("no library is a mention, the section must not render")

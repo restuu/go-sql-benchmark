@@ -1,41 +1,20 @@
-# Go SQL library benchmark
+# Go SQL library benchmark: detailed report
 
-Run started 2026-10-21T04:58:02Z (UTC). Numbers are only comparable on the same machine.
+The ranking, how to run the benchmark, the environment and the methodology are in the [summary](README.md); its [glossary](README.md#glossary) explains the technical terms. Numbers are only comparable on the machine they were measured on, and they are not final.
 
-Compares 3 libraries on three measures: **latency** (p95, the time within which 95% of calls finished), **memory** (B/op, bytes allocated per operation) and **CPU** (CPU ns/op, CPU time per operation). Each library runs 6 scenarios under 2 load profiles; a **case** is one scenario under one load profile, written scenario/profile, for example join/low.
+## Reading the tables
 
-## Environment
+Each table is one scenario under one load profile (a case); each row is one library. Terms such as p95 and B/op are also explained in the [glossary](README.md#glossary) of the summary.
 
-- OS/arch: darwin/arm64
-- Go: go1.27.3
-- CPUs: 8 (GOMAXPROCS 8)
-- PostgreSQL: 15.19
-- Driver shared by every database/sql-based library: pgx v5.11.0
-
-| Library | Version | Label | Version used |
-|---|---|---|---|
-| database/sql | - | - | standard library |
-| sqlx | v1.4.0 | no updates since 2024 | v1.4.0 |
-| ent | v0.14.6 | - | v0.14.6 |
-
-## Run configuration
-
-Repeats per case: 2 (the median is reported). Seed: 1792558680234027000.
-
-| Profile | Workers | Pacing | Warm-up | Window | DELETE ids |
-|---|---:|---:|---:|---:|---:|
-| low | 4 | 10ms | 1s | 3s | 5000 |
-| stress | 100 | unpaced | 2s | 3s | 100000 |
-
-## Methodology
-
-- Fixture methodology line one.
-- Fixture methodology line two with a | pipe.
-
-Reading the tables:
-
-- `p95 vs database/sql` is relative to the baseline's p95 in the same table; negative is faster.
-- `p95 spread` is (max - min) / median of the repeats' p95; `*` marks a spread above 10%.
+- `Library`: the library measured.
+- `p50`, `p95`, `p99`: how long one call took. Sort all the calls from fastest to slowest: p50 is the middle one, p95 is the time 95 out of 100 calls beat, p99 the time 99 out of 100 beat. Lower is better; p95 is the figure used for the score.
+- `ops/s`: operations (calls) finished per second across all workers. Higher is better; not part of the score.
+- `B/op`: bytes of memory allocated per call. Lower is better.
+- `allocs/op`: how many separate memory allocations one call makes. Lower is usually better; not part of the score.
+- `CPU ns/op`: processor time spent per call, in nanoseconds (billionths of a second). Lower is better.
+- `err %`: the share of calls that failed, as a percentage.
+- `p95 vs database/sql`: this library's p95 compared with database/sql's p95 in the same table, as a percentage; `+20.0%` is 20% slower, `-20.0%` is 20% faster.
+- `p95 spread` is (max - min) / median of the repeats' p95; `*` marks a spread above 10%, so read that row as approximate.
 - `!` after a library means an error rate above 1%: the case is shown but not ranked.
 - `[n]` points to the numbered note under the table.
 - `n/a (...)` means the library cannot express the scenario; the case is not ranked.
@@ -146,33 +125,6 @@ Reading the tables:
 | sqlx | 1.7 ms | 4.4 ms | 202 ms | 17675 | 15856 | 358.2 | 67541 | 0.00 | -10.2% | 0.0% |
 | ent | n/a (unsupported) | - | - | - | - | - | - | - | - | - |
 
-## Top 5
-
-Score is the weighted geometric mean, over every ranked case, of each metric's ratio to database/sql (p95 1, B/op 1, CPU ns/op 1). 1.00 means the same as database/sql, 2.00 twice as much, 0.50 half; lower is better. A case needs a measured database/sql result to be scored.
-
-Libraries with equal scores share a rank.
-
-| Rank | Library | Score | Ranked cases |
-|---:|---|---:|---:|
-| 1 | database/sql | 1.00 | 12/12 |
-| 2 | sqlx | 1.22 | 12/12 |
-| 3 | ent | 1.90 | 10/12 |
-
-**database/sql**
-
-- the baseline: every ratio is 1.00 by definition
-
-**sqlx**
-
-- ratio to database/sql (geometric mean over ranked cases, 1.00 = same, lower is better): p95 1.02x, B/op 1.45x, CPU ns/op 1.24x
-- slowest case: union/low (p95 1.37x database/sql)
-
-**ent**
-
-- ratio to database/sql (geometric mean over ranked cases, 1.00 = same, lower is better): p95 1.35x, B/op 4.20x, CPU ns/op 1.22x
-- slowest case: delete/stress (p95 2.48x database/sql)
-- judged on 10 of 12 cases
-
 ## Pros and cons
 
 ### database/sql
@@ -278,3 +230,14 @@ Repository facts read on 2026-10-24, with no rating and no part in the score; th
 | sqlx | jmoiron/sqlx | 16000 | 2024-05-01 | 2024-06-01 | 300 |
 
 - **database/sql**: Counts cover the whole Go project.
+## Qualitative ranking (judgement)
+
+A second, separate ranking of the three sections above. It is not part of the measured score, the Top 5 or the stability check. The levels behind it are the author's judgement and the score only turns them into numbers, so it looks more objective than it is.
+
+Weights: flexibility 0.40, ease of use 0.35 (the learning curve counts as one more criterion), community 0.25. Levels count linearly from 1 (best) to 0 (worst). Community is the mean of last-commit recency and last-release recency (1 within 30 days of 2026-10-24, 0 after 730 days) and open issues per 1,000 stars (1 with none, 0 at 100 or more); stars are left out because they reward age. Equal totals share a rank and are listed alphabetically.
+
+| Rank | Library | Total | Flexibility | Ease of use | Community |
+|---|---|---|---|---|---|
+| 1 | database/sql | 0.78 | 0.94 | 0.60 | 0.77 |
+| 2 | ent | 0.78 | 0.94 | 0.50 | 0.90 |
+| 3 | sqlx | 0.47 | 0.39 | 0.70 | 0.27 |

@@ -1,7 +1,9 @@
-// Command report renders one benchmark result file and the rubric into a Markdown report.
+// Command report renders one benchmark result file and the rubric into a Markdown summary and a
+// detailed report.
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -33,12 +35,13 @@ func run(args []string, stdout, stderr io.Writer) int {
 	fs.SetOutput(stderr)
 	in := fs.String("in", "", "result JSON file (required)")
 	rubricPath := fs.String("rubric", defaultRubric, "rubric JSON file")
-	out := fs.String("out", "", "write the report to this file instead of stdout")
+	out := fs.String("out", "", "write the summary to this file instead of stdout (requires -details-out)")
+	detailsOut := fs.String("details-out", "", "write the detailed report to this file (requires -out)")
 	if err := fs.Parse(args); err != nil {
 		return exitUsage
 	}
-	if *in == "" || fs.NArg() != 0 {
-		fmt.Fprintln(stderr, "usage: report -in results/run.json [-rubric report/rubric.json] [-out report.md]")
+	if *in == "" || fs.NArg() != 0 || (*out == "") != (*detailsOut == "") {
+		fmt.Fprintln(stderr, "usage: report -in results/run.json [-rubric report/rubric.json] [-out README.md -details-out REPORT.md]")
 		return exitUsage
 	}
 	r, err := result.Load(*in)
@@ -51,20 +54,41 @@ func run(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, err)
 		return exitUsage
 	}
-	md, err := report.Render(r, rb)
+	files := report.DefaultFiles
+	if *out != "" {
+		if err := checkOutputs(*out, *detailsOut); err != nil {
+			fmt.Fprintln(stderr, err)
+			return exitUsage
+		}
+		files = report.Files{Summary: filepath.Base(*out), Details: filepath.Base(*detailsOut)}
+	}
+	doc, err := report.Render(r, rb, files)
 	if err != nil {
 		fmt.Fprintln(stderr, err)
 		return exitRender
 	}
 	if *out == "" {
-		fmt.Fprint(stdout, md)
+		fmt.Fprint(stdout, doc.Summary+"\n"+doc.Details)
 		return exitOK
 	}
-	if err := writeFile(*out, md); err != nil {
+	if err := errors.Join(writeFile(*out, doc.Summary), writeFile(*detailsOut, doc.Details)); err != nil {
 		fmt.Fprintln(stderr, err)
 		return exitUsage
 	}
 	return exitOK
+}
+
+// checkOutputs requires two different files in one directory, because the documents link to each
+// other by file name.
+func checkOutputs(summary, details string) error {
+	summary, details = filepath.Clean(summary), filepath.Clean(details)
+	switch {
+	case summary == details:
+		return fmt.Errorf("report: -out and -details-out are the same file %s", summary)
+	case filepath.Dir(summary) != filepath.Dir(details):
+		return fmt.Errorf("report: -out (%s) and -details-out (%s) must be in the same directory so their links work", summary, details)
+	}
+	return nil
 }
 
 // writeFile writes the report, creating parent directories like result.Write.

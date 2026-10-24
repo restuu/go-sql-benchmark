@@ -54,7 +54,7 @@ bench-cmp:
 	go run ./cmd/benchcmp -tolerance $(BENCH_TOL) $(A) $(B)
 
 report:
-	go run ./cmd/report -in $(IN) $(if $(OUT),-out $(OUT))
+	go run ./cmd/report -in $(IN) $(if $(OUT),-out $(OUT) -details-out $(or $(DETAILS),$(dir $(OUT))REPORT.md))
 
 # Code generators are pinned in tools/go.mod (tool directives) so the main go.mod stays free of them.
 GOTOOL   := go tool -modfile=tools/go.mod

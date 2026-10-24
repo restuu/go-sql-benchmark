@@ -61,6 +61,10 @@ func TestRun(t *testing.T) {
 		{"run file is not json", []string{"-in", notJSON, "-rubric", fixtureRubric}, exitUsage, ""},
 		{"missing rubric file", []string{"-in", fixtureRun, "-rubric", filepath.Join(dir, "none.json")}, exitUsage, ""},
 		{"rubric with an unknown field", []string{"-in", fixtureRun, "-rubric", badRubric}, exitUsage, ""},
+		{"-out without -details-out", []string{"-in", fixtureRun, "-rubric", fixtureRubric, "-out", filepath.Join(dir, "s.md")}, exitUsage, ""},
+		{"-details-out without -out", []string{"-in", fixtureRun, "-rubric", fixtureRubric, "-details-out", filepath.Join(dir, "d.md")}, exitUsage, ""},
+		{"-out and -details-out are the same file", []string{"-in", fixtureRun, "-rubric", fixtureRubric, "-out", filepath.Join(dir, "same.md"), "-details-out", filepath.Join(dir, ".", "same.md")}, exitUsage, ""},
+		{"-out and -details-out are in different directories", []string{"-in", fixtureRun, "-rubric", fixtureRubric, "-out", filepath.Join(dir, "a", "s.md"), "-details-out", filepath.Join(dir, "b", "d.md")}, exitUsage, ""},
 		{"incomplete run", []string{"-in", incomplete, "-rubric", fixtureRubric}, exitRender, ""},
 	}
 	for _, tt := range tests {
@@ -88,13 +92,14 @@ func TestRun(t *testing.T) {
 	}
 }
 
-func TestRunWritesOutFileAndCreatesParents(t *testing.T) {
+func TestRunWritesBothFilesAndCreatesParents(t *testing.T) {
 	// Arrange
-	path := filepath.Join(t.TempDir(), "missing", "dir", "report.md")
+	dir := filepath.Join(t.TempDir(), "missing", "dir")
+	summary, details := filepath.Join(dir, "sum.md"), filepath.Join(dir, "more.md")
 	var out, errOut bytes.Buffer
 
 	// Act
-	code := run([]string{"-in", fixtureRun, "-rubric", fixtureRubric, "-out", path}, &out, &errOut)
+	code := run([]string{"-in", fixtureRun, "-rubric", fixtureRubric, "-out", summary, "-details-out", details}, &out, &errOut)
 
 	// Assert
 	if code != exitOK {
@@ -103,12 +108,16 @@ func TestRunWritesOutFileAndCreatesParents(t *testing.T) {
 	if out.Len() != 0 {
 		t.Fatalf("stdout should be empty with -out, got %d bytes", out.Len())
 	}
-	data, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("read -out file: %v", err)
+	sumData, sumErr := os.ReadFile(summary)
+	detData, detErr := os.ReadFile(details)
+	if sumErr != nil || detErr != nil {
+		t.Fatalf("read outputs: %v, %v", sumErr, detErr)
 	}
-	if !strings.HasPrefix(string(data), reportTitle) {
-		t.Fatalf("-out file starts with %q", string(data)[:min(40, len(data))])
+	if !strings.HasPrefix(string(sumData), reportTitle) || !strings.Contains(string(sumData), "(more.md)") {
+		t.Fatalf("summary does not start with the title or link to more.md: %q", string(sumData)[:min(60, len(sumData))])
+	}
+	if !strings.Contains(string(detData), "(sum.md)") || strings.Contains(string(detData), "## Top 5") {
+		t.Fatalf("details should link back to sum.md and hold no ranking")
 	}
 }
 
@@ -121,7 +130,7 @@ func TestRunOutIntoUnwritablePathFails(t *testing.T) {
 	var out, errOut bytes.Buffer
 
 	// Act
-	code := run([]string{"-in", fixtureRun, "-rubric", fixtureRubric, "-out", filepath.Join(blocker, "sub", "r.md")}, &out, &errOut)
+	code := run([]string{"-in", fixtureRun, "-rubric", fixtureRubric, "-out", filepath.Join(blocker, "sub", "r.md"), "-details-out", filepath.Join(blocker, "sub", "d.md")}, &out, &errOut)
 
 	// Assert
 	if code != exitUsage || errOut.Len() == 0 {

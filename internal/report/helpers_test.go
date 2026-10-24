@@ -45,3 +45,13 @@ func runOf(cells ...result.Cell) result.Run {
 }
 
 var equalWeights = Weights{P95: 1, BytesPerOp: 1, CPUNsPerOp: 1}
+
+// renderFull renders both documents with the default file names and joins them, so a test can look
+// for a section without caring which document holds it.
+func renderFull(run result.Run, rb Rubric) (string, error) {
+	doc, err := Render(run, rb, DefaultFiles)
+	if err != nil {
+		return "", err
+	}
+	return doc.Summary + "\n" + doc.Details, nil
+}
