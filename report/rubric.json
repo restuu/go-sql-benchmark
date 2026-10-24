@@ -2,6 +2,9 @@
   "weights": {"p95": 1, "bytes_per_op": 1, "cpu_ns_per_op": 1},
   "methodology": [
     "Every database/sql-based library uses the same pgx/stdlib driver (pgx), never lib/pq.",
+    "pgx and pgx_pool bypass database/sql and use pgxpool with the pool sized like every other adapter. pgx collects rows into structs with its CollectRows/RowToStructByName helpers; pgx_pool scans into locals like the database/sql reference, so it shows the driver floor. Both use pgx's default statement cache, never an explicit Prepare.",
+    "A cell is one library x scenario x profile combination, for example sqlx/join/low. It is the unit that is measured, reduced to the median of the repeats and ranked; an n/a cell is excluded.",
+    "pop cannot take an existing *sql.DB, so it opens its own pool through its PostgreSQL dialect, which uses the same pgx stdlib driver; the pool is sized like every other adapter.",
     "Numbers are only comparable on the machine and run they were measured on; the host is listed above.",
     "Each cell is the median of the repeats listed in the run configuration. Before the matrix runs, every adapter is checked against the database/sql reference on returned values, and every read scans every selected column.",
     "Latency is the per-call service time of successful operations with exact nearest-rank percentiles; it is not corrected for coordinated omission.",
@@ -9,9 +12,11 @@
     "B/op and allocs/op also include each library's idiomatic result handling: sqlx, sqlc, gorm, ent and jet materialise rows, while the database/sql reference scans into locals, so part of the difference is the cost of that handling.",
     "A scenario counts as supported only when the library's own query API (or, for the SQL-first sqlc and sqlx, its SQL) expresses it; needing the raw-SQL escape hatch makes the cell n/a and it is not ranked.",
     "A library's score averages the ranks of its own ranked cells only, and a rank is absolute (1 is best, N is worst among the libraries in that cell). A library with n/a or excluded cells is therefore judged on fewer, possibly easier, scenarios; the Ranked cells column shows how many.",
+    "Ease of use and learning curve are the author's judgement from writing and reviewing these adapters and reading each library's documentation, not measurements, and they are not ranked. Community facts (stars, last release, last commit, open issues) were read from the forge APIs on the date shown in that section; a release date is the date the latest release was published, or the tag commit date where the notes say so.",
     "Stress-profile p99 on macOS includes a constant 100-200 ms host-to-VM stall (Postgres runs in an OrbStack VM) and is not a property of the library.",
     "Run-to-run stability (two full runs on this machine, 2026-10-24, see .claude/PRPs/reports/full-run-report.md): p95 differed by 20% or less in 62 of 72 cells; the other 10 are all low-profile cells and reached up to 48%, while every stress cell stayed under 9%. The same five libraries made the top 5 in both runs, but sqlx and sqlc swapped ranks 2 and 3, so the order of database/sql, sqlx and sqlc is within noise. The cause is environmental (loaded macOS host, host-VM network crossing, WAL fsync on the VM disk); see .claude/PRPs/reports/p95-stability-report.md."
   ],
+  "community_checked": "2026-10-24",
   "libraries": [
     {
       "name": "database_sql", "display": "database/sql", "module": "",
@@ -22,7 +27,40 @@
       ],
       "cons": [
         "Hand-written SQL strings and row scanning, with no compile-time check of either."
-      ]
+      ],
+      "ease_of_use": {
+        "criteria": {
+          "setup_effort": "good",
+          "query_writing": "poor",
+          "type_safety": "poor",
+          "debugging": "good"
+        },
+        "notes": [
+          "No setup beyond the driver, but every query needs its own SQL string, argument list and Scan call.",
+          "The SQL that runs is the SQL you wrote, so there is nothing to translate when debugging; a wrong column or placeholder count only fails at run time."
+        ]
+      },
+      "learning_curve": {
+        "level": "gentle",
+        "notes": [
+          "SQL and the standard library are enough; the API is small and stable."
+        ]
+      },
+      "community": {
+        "repo": "golang/go",
+        "stars": 139505,
+        "open_issues": 9832,
+        "last_release": "2026-10-20",
+        "last_commit": "2026-10-23",
+        "note": "Counts cover the whole Go project, not database/sql alone; the release date is the go1.27.3 tag commit (the repository publishes no GitHub releases)."
+      },
+      "flexibility": {
+        "capabilities": {"optional_filters": "raw_sql", "dynamic_ordering": "raw_sql", "conditional_join": "raw_sql", "dynamic_projection": "raw_sql", "in_list_batch": "raw_sql", "dynamic_pagination": "raw_sql"},
+        "notes": [
+          "Every dynamic part is built by hand: append WHERE fragments, ORDER BY and LIMIT/OFFSET to a string and collect the arguments in a slice. Nothing limits what can be composed, but nothing checks it either (no compile-time or schema check), and column names for ORDER BY must be allow-listed by the caller.",
+          "Variable-length IN: on PostgreSQL pass one array argument (`id = ANY($1)`) through pgx, or generate the placeholders yourself."
+        ]
+      }
     },
     {
       "name": "sqlc", "display": "sqlc", "module": "",
@@ -34,7 +72,41 @@
       "cons": [
         "Needs a generation step (make gen-sqlc) and committed generated code.",
         "Each query lives in an SQL file; there is no runtime query builder."
-      ]
+      ],
+      "ease_of_use": {
+        "criteria": {
+          "setup_effort": "fair",
+          "query_writing": "good",
+          "type_safety": "good",
+          "debugging": "good"
+        },
+        "notes": [
+          "Needs a sqlc config, annotated .sql files and a generate step with committed output; after that a query is a typed function call.",
+          "Queries are checked against the schema at generation time, and the generated code is plain, readable Go."
+        ]
+      },
+      "learning_curve": {
+        "level": "moderate",
+        "notes": [
+          "Write SQL plus sqlc query annotations and configuration; the generated API itself is trivial."
+        ]
+      },
+      "community": {
+        "repo": "sqlc-dev/sqlc",
+        "stars": 18406,
+        "open_issues": 585,
+        "last_release": "2026-04-22",
+        "last_commit": "2026-10-23"
+      },
+      "flexibility": {
+        "capabilities": {"optional_filters": "partial", "dynamic_ordering": "partial", "conditional_join": "static_only", "dynamic_projection": "static_only", "in_list_batch": "native", "dynamic_pagination": "native"},
+        "notes": [
+          "Every query is fixed SQL at generation time; there is no runtime WHERE, ORDER BY, JOIN or column list. Dynamic search means either one query per shape or SQL written to tolerate absent parameters.",
+          "Optional filters: `sqlc.narg('x')` makes a parameter nullable, so `WHERE (col = sqlc.narg('x') OR sqlc.narg('x') IS NULL)` or `coalesce(sqlc.narg('x'), col)` skips the filter when it is NULL. This works, but the generated parameter struct carries every filter and the plan is one generic plan for all shapes.",
+          "Dynamic ordering only through a `CASE` expression over a fixed list of columns written in the SQL. Variable-length IN on PostgreSQL is `col = ANY($1::int[])` with a slice argument (`sqlc.slice` is for MySQL and SQLite). LIMIT and OFFSET are ordinary parameters.",
+          "A query that is truly dynamic needs hand-written SQL outside sqlc."
+        ]
+      }
     },
     {
       "name": "sqlx", "display": "sqlx", "module": "sqlx",
@@ -46,7 +118,39 @@
       "cons": [
         "No updates since 2024.",
         "Scanning into structs is reflection-based."
-      ]
+      ],
+      "ease_of_use": {
+        "criteria": {
+          "setup_effort": "good",
+          "query_writing": "fair",
+          "type_safety": "poor",
+          "debugging": "good"
+        },
+        "notes": [
+          "Adds struct scanning (Get, Select, named queries) on top of database/sql, so there is less Scan code; SQL stays in strings with no compile-time check."
+        ]
+      },
+      "learning_curve": {
+        "level": "gentle",
+        "notes": [
+          "Anyone who knows database/sql already knows most of it; the db struct tag is the only new concept."
+        ]
+      },
+      "community": {
+        "repo": "jmoiron/sqlx",
+        "stars": 17738,
+        "open_issues": 317,
+        "last_release": "2024-04-23",
+        "last_commit": "2024-05-30"
+      },
+      "flexibility": {
+        "capabilities": {"optional_filters": "raw_sql", "dynamic_ordering": "raw_sql", "conditional_join": "raw_sql", "dynamic_projection": "raw_sql", "in_list_batch": "native", "dynamic_pagination": "raw_sql"},
+        "notes": [
+          "Same string-building model as database/sql for filters, ordering, joins, projection and pagination: fully flexible, unchecked, and ORDER BY columns need an allow-list.",
+          "`sqlx.In` expands a slice argument into one placeholder per element (then `Rebind` for the driver; an empty slice is an error), and `NamedExec` accepts a slice of structs or maps for batch inserts.",
+          "Named queries (`:name`) bind from a struct or map but do not make parts of the SQL optional."
+        ]
+      }
     },
     {
       "name": "gorm", "display": "gorm", "module": "gorm",
@@ -57,7 +161,41 @@
       "cons": [
         "UNION is not expressible without raw SQL, so that cell is n/a.",
         "Defaults need care to benchmark fairly: every write is wrapped in a transaction unless SkipDefaultTransaction is set, and Save or Updates(struct) misreport or skip zero values and missing rows unless guarded."
-      ]
+      ],
+      "ease_of_use": {
+        "criteria": {
+          "setup_effort": "good",
+          "query_writing": "good",
+          "type_safety": "fair",
+          "debugging": "fair"
+        },
+        "notes": [
+          "Little setup: models with struct tags and a Open call; chained query methods keep typical queries short.",
+          "Columns and conditions are strings, so mistakes surface at run time; defaults such as the implicit write transaction and zero-value skipping in Updates(struct) surprise newcomers."
+        ]
+      },
+      "learning_curve": {
+        "level": "moderate",
+        "notes": [
+          "Large API with several ways to do one thing (Save, Updates, Select, Omit); the defaults matter for correctness."
+        ]
+      },
+      "community": {
+        "repo": "go-gorm/gorm",
+        "stars": 39988,
+        "open_issues": 457,
+        "last_release": "2026-06-25",
+        "last_commit": "2026-10-23"
+      },
+      "flexibility": {
+        "capabilities": {"optional_filters": "native", "dynamic_ordering": "native", "conditional_join": "native", "dynamic_projection": "native", "in_list_batch": "native", "dynamic_pagination": "native"},
+        "notes": [
+          "Chained `Where`, `Order`, `Select`/`Omit`, `Joins`, `Preload`, `Limit` and `Offset` can each be applied inside an `if`, and `Scopes(func(*gorm.DB) *gorm.DB)` packages a reusable conditional step.",
+          "Caveat: a struct passed to `Where` skips zero-value fields (0, '', false), so it cannot filter on a zero value; use a map or an explicit `Where(\"col = ?\", v)`. `Order` with a plain string is raw SQL; pass `clause.OrderByColumn` for a checked column.",
+          "Variable-length IN: `Where(\"id IN ?\", slice)`, a slice of primary keys in `Where`, and `CreateInBatches` for batch inserts. `Updates` with a map or `Select` columns chooses the updated columns at runtime.",
+          "Most of the query is built from strings and interface{} values, so mistakes surface at run time, not compile time."
+        ]
+      }
     },
     {
       "name": "ent", "display": "ent", "module": "ent",
@@ -69,7 +207,41 @@
         "JOIN is edge eager-loading: two queries rather than one SQL JOIN.",
         "UNION is not expressible without raw SQL, so that cell is n/a.",
         "Needs a generation step (make gen-ent) and a large amount of committed generated code."
-      ]
+      ],
+      "ease_of_use": {
+        "criteria": {
+          "setup_effort": "poor",
+          "query_writing": "good",
+          "type_safety": "good",
+          "debugging": "fair"
+        },
+        "notes": [
+          "Needs a schema definition in Go, a code generator and a large body of generated code before the first query.",
+          "The generated builders are typed and discoverable, but a query goes through generated layers (edge loading instead of a JOIN) that you have to inspect to see the SQL."
+        ]
+      },
+      "learning_curve": {
+        "level": "steep",
+        "notes": [
+          "A schema DSL, the generator, edges and eager loading are all new concepts on top of SQL."
+        ]
+      },
+      "community": {
+        "repo": "ent/ent",
+        "stars": 17209,
+        "open_issues": 502,
+        "last_release": "2026-03-23",
+        "last_commit": "2026-10-14"
+      },
+      "flexibility": {
+        "capabilities": {"optional_filters": "native", "dynamic_ordering": "native", "conditional_join": "native", "dynamic_projection": "native", "in_list_batch": "native", "dynamic_pagination": "native"},
+        "notes": [
+          "Generated, typed predicates are collected in a `[]predicate.X` and passed to `Where(preds...)`, so optional filters are an `append` inside an `if`; `And`, `Or` and `Not` combine them.",
+          "Conditional eager loading: add `WithXxx()` only when needed (it issues extra queries, not a JOIN). `HasXxxWith(...)` filters through an edge and renders as a subquery, not a JOIN of selected columns.",
+          "Ordering: generated `ByXxx()` options (or `ent.Asc(field)`) passed to `Order`, chosen at runtime from a switch. Projection: `Select(fields...)` with `Scan` into a custom struct, or `Select` on the entity (unselected fields stay zero). `Limit` and `Offset` apply directly; `FieldIn`/`IDIn` take a slice and `CreateBulk` batches inserts.",
+          "Every shape stays inside the generated API, but the schema must be regenerated when the model changes."
+        ]
+      }
     },
     {
       "name": "jet", "display": "go-jet", "module": "jet",
@@ -80,7 +252,529 @@
       "cons": [
         "Code is generated from the live database (make gen-jet needs it running).",
         "Pulls in lib/pq for array literals, although no adapter uses that driver."
-      ]
+      ],
+      "ease_of_use": {
+        "criteria": {
+          "setup_effort": "fair",
+          "query_writing": "good",
+          "type_safety": "good",
+          "debugging": "good"
+        },
+        "notes": [
+          "Needs a generate step against a live database; queries are then written with a builder that mirrors SQL.",
+          "Builder expressions are typed against the generated tables, and a statement can print its SQL and arguments."
+        ]
+      },
+      "learning_curve": {
+        "level": "moderate",
+        "notes": [
+          "SQL knowledge transfers directly; the builder API and the generator are the new parts."
+        ]
+      },
+      "community": {
+        "repo": "go-jet/jet",
+        "stars": 3819,
+        "open_issues": 33,
+        "last_release": "2026-10-06",
+        "last_commit": "2026-10-09"
+      },
+      "flexibility": {
+        "capabilities": {"optional_filters": "native", "dynamic_ordering": "native", "conditional_join": "native", "dynamic_projection": "native", "in_list_batch": "partial", "dynamic_pagination": "native"},
+        "notes": [
+          "Typed builder: start from `Bool(true)` and `AND`/`OR` in `BoolExpression`s only when a parameter is present; the FAQ shows exactly this pattern for dynamic conditions.",
+          "Dynamic projection by appending columns or expressions to a `ProjectionList`; joins are values (`table.INNER_JOIN(other, on)`) that can be reassigned conditionally; `ORDER_BY` takes expressions chosen at runtime; `LIMIT` and `OFFSET` take values.",
+          "Variable-length IN is partial: the slice has to be converted to `[]Expression` (one `Int(...)`/`String(...)` per element) before `IN(...)`.",
+          "Every shape stays inside the builder, but column and table types come from code generated against the live database."
+        ]
+      }
+    },
+    {
+      "name": "pgx", "display": "pgx", "module": "pgx",
+      "label": "", "version_used": "v5.11.0",
+      "pros": [
+        "Native PostgreSQL driver API without database/sql; rows are collected into structs with `CollectRows`/`RowToStructByName`.",
+        "Every scenario, including UNION, is plain SQL."
+      ],
+      "cons": [
+        "Hand-written SQL and no query builder.",
+        "PostgreSQL only."
+      ],
+      "ease_of_use": {
+        "criteria": {
+          "setup_effort": "good",
+          "query_writing": "fair",
+          "type_safety": "poor",
+          "debugging": "good"
+        },
+        "notes": [
+          "Pool config plus plain SQL; CollectRows with RowToStructByName removes most Scan code, but the column to field match is checked at run time.",
+          "Errors are PostgreSQL errors with codes, and a query tracer is built in."
+        ]
+      },
+      "learning_curve": {
+        "level": "moderate",
+        "notes": [
+          "A native API unlike database/sql (pgxpool, Rows, generic collect helpers) to learn on top of SQL."
+        ]
+      },
+      "community": {
+        "repo": "jackc/pgx",
+        "stars": 14352,
+        "open_issues": 182,
+        "last_release": "2026-09-07",
+        "last_commit": "2026-10-21",
+        "note": "Same repository as the pgx_pool entry."
+      },
+      "flexibility": {
+        "capabilities": {"optional_filters": "raw_sql", "dynamic_ordering": "raw_sql", "conditional_join": "raw_sql", "dynamic_projection": "raw_sql", "in_list_batch": "native", "dynamic_pagination": "raw_sql"},
+        "notes": [
+          "Plain SQL strings with `$n` or `@name` (`pgx.NamedArgs`) arguments: filters, ordering, joins, projection and pagination are all built by hand, with no builder and no compile-time check. Column names for ORDER BY need an allow-list.",
+          "Variable-length input is native: a Go slice encodes as a PostgreSQL array (`id = ANY($1)`), `pgx.Batch` sends several queries in one round trip and `CopyFrom` bulk-loads rows."
+        ]
+      }
+    },
+    {
+      "name": "pgx_pool", "display": "pgx_pool", "module": "pgx",
+      "label": "", "version_used": "v5.11.0",
+      "pros": [
+        "Lowest-level adapter here: pgxpool with Query and Scan into locals, so it shows the cost of the driver and pool alone.",
+        "Every scenario, including UNION, is plain SQL."
+      ],
+      "cons": [
+        "Hand-written SQL and manual scanning of every column.",
+        "PostgreSQL only."
+      ],
+      "ease_of_use": {
+        "criteria": {
+          "setup_effort": "good",
+          "query_writing": "poor",
+          "type_safety": "poor",
+          "debugging": "good"
+        },
+        "notes": [
+          "Pool config plus plain SQL, with Query/Scan into locals like database/sql: the most code per query, and nothing is checked before run time.",
+          "The SQL that runs is the SQL you wrote, and PostgreSQL error codes are available directly."
+        ]
+      },
+      "learning_curve": {
+        "level": "gentle",
+        "notes": [
+          "Same shape as database/sql (Query, Next, Scan), so the step up from it is small."
+        ]
+      },
+      "community": {
+        "repo": "jackc/pgx",
+        "stars": 14352,
+        "open_issues": 182,
+        "last_release": "2026-09-07",
+        "last_commit": "2026-10-21",
+        "note": "Same repository as the pgx entry."
+      },
+      "flexibility": {
+        "capabilities": {"optional_filters": "raw_sql", "dynamic_ordering": "raw_sql", "conditional_join": "raw_sql", "dynamic_projection": "raw_sql", "in_list_batch": "native", "dynamic_pagination": "raw_sql"},
+        "notes": [
+          "Plain SQL strings with `$n` or `@name` (`pgx.NamedArgs`) arguments: filters, ordering, joins, projection and pagination are all built by hand, with no builder and no compile-time check. Column names for ORDER BY need an allow-list.",
+          "Variable-length input is native: a Go slice encodes as a PostgreSQL array (`id = ANY($1)`), `pgx.Batch` sends several queries in one round trip and `CopyFrom` bulk-loads rows."
+        ]
+      }
+    },
+    {
+      "name": "bun",
+      "display": "bun",
+      "module": "bun",
+      "label": "",
+      "version_used": "v1.3.0",
+      "pros": [
+        "Query builder covers every scenario: JOIN is a belongs-to relation compiled to one SQL JOIN, UNION is Union on the select builder, and writes report rows affected."
+      ],
+      "cons": [
+        "Models embed bun.BaseModel and carry bun: struct tags, and PostgreSQL needs the separate pgdialect module."
+      ],
+      "ease_of_use": {
+        "criteria": {
+          "setup_effort": "good",
+          "query_writing": "good",
+          "type_safety": "fair",
+          "debugging": "good"
+        },
+        "notes": [
+          "Models embed bun.BaseModel with struct tags, and PostgreSQL needs the separate pgdialect module; no generator.",
+          "Conditions and columns are strings, and a query hook (bundebug) prints each statement."
+        ]
+      },
+      "learning_curve": {
+        "level": "moderate",
+        "notes": [
+          "A SQL-shaped query builder plus model tags and relations; close to SQL but its own vocabulary."
+        ]
+      },
+      "community": {
+        "repo": "uptrace/bun",
+        "stars": 5002,
+        "open_issues": 27,
+        "last_release": "2026-10-03",
+        "last_commit": "2026-10-03"
+      },
+      "flexibility": {
+        "capabilities": {
+          "optional_filters": "native",
+          "dynamic_ordering": "native",
+          "conditional_join": "native",
+          "dynamic_projection": "native",
+          "in_list_batch": "native",
+          "dynamic_pagination": "native"
+        },
+        "notes": [
+          "SelectQuery methods return the query, so `Where`, `WhereGroup`, `Join`, `Relation`, `Column`/`ExcludeColumn`, `Limit` and `Offset` can each be applied inside an `if`; `Apply(fn...)` packages a reusable conditional step.",
+          "`bun.In(slice)` expands a slice into an IN list, and `NewInsert().Model(&slice)` inserts a slice in one statement.",
+          "Caveat: `Order` takes a column and direction as a string and `OrderExpr` takes raw SQL, so user-supplied column names still need an allow-list; conditions are strings with `?` placeholders, checked at run time."
+        ]
+      }
+    },
+    {
+      "name": "beego",
+      "display": "beego",
+      "module": "beego",
+      "label": "",
+      "version_used": "v2.3.10",
+      "pros": [
+        "The ORM (Ormer, QuerySeter) runs on a plain *sql.DB through AddAliasWthDB, so it shares the pgx stdlib driver; JOIN is RelatedSel on a foreign-key field, loaded in the same query."
+      ],
+      "cons": [
+        "UNION is not expressible without raw SQL, so that cell is n/a.",
+        "Global registries: models register once before first use and a database alias name cannot be reused, so the adapter registers a fresh alias on every Init.",
+        "A query that never calls Limit is capped at 1000 rows by default."
+      ],
+      "ease_of_use": {
+        "criteria": {
+          "setup_effort": "fair",
+          "query_writing": "fair",
+          "type_safety": "poor",
+          "debugging": "fair"
+        },
+        "notes": [
+          "Models must be registered globally before use and the database alias is a global name, which is easy to get wrong in tests and multi-database programs.",
+          "Filters are strings such as customer__id, so typos only fail at run time; a query without Limit is capped at 1000 rows by default."
+        ]
+      },
+      "learning_curve": {
+        "level": "moderate",
+        "notes": [
+          "The ORM is a subset of a framework with its own conventions (aliases, QuerySeter lookups); the documentation is spread over the framework."
+        ]
+      },
+      "community": {
+        "repo": "beego/beego",
+        "stars": 32430,
+        "open_issues": 7,
+        "last_release": "2026-04-03",
+        "last_commit": "2026-03-09",
+        "note": "The v2.3.10 release was published after the last commit on master, which is why the release date is later. Module is github.com/beego/beego/v2; the repository covers the whole web framework, not only the ORM."
+      },
+      "flexibility": {
+        "capabilities": {
+          "optional_filters": "native",
+          "dynamic_ordering": "native",
+          "conditional_join": "partial",
+          "dynamic_projection": "native",
+          "in_list_batch": "native",
+          "dynamic_pagination": "native"
+        },
+        "notes": [
+          "QuerySeter methods (`Filter`, `OrderBy`, `Limit`, `RelatedSel`) chain, so each can be applied inside an `if`; `NewCondition().And(...)`/`Or(...)` with `SetCond` builds nested AND/OR groups at run time. `OrderBy(\"-col\")` sorts descending.",
+          "Joins: `RelatedSel` only joins relations declared on the model (rel(fk) and similar); an ad-hoc join needs the string-based QueryBuilder or raw SQL, hence partial.",
+          "Projection by passing column names to `All`/`One`; IN lists through the `__in` operator (`Filter(\"id__in\", ids...)`); `InsertMulti(bulk, slice)` batch-inserts.",
+          "Caveat: `Limit` defaults to 1000 rows when not called, and filter field names are strings checked at run time."
+        ]
+      }
+    },
+    {
+      "name": "pop",
+      "display": "pop",
+      "module": "pop",
+      "label": "",
+      "version_used": "v6.4.1",
+      "pros": [
+        "Query API covers INSERT, UPDATE (UpdateQuery reports rows affected), DELETE, SELECT and JOIN (Join with an ON clause, one SQL statement)."
+      ],
+      "cons": [
+        "Destroy and Query.Delete report no rows affected, so the adapter's DELETE returns 1 for any error-free call; a missing id would also report 1.",
+        "UNION is not expressible without RawQuery, so that cell is n/a.",
+        "Opens its own pool (no *sql.DB injection), though on the same pgx stdlib driver.",
+        "Create, Update and Destroy run model lifecycle callbacks (before/after hooks)."
+      ],
+      "ease_of_use": {
+        "criteria": {
+          "setup_effort": "fair",
+          "query_writing": "good",
+          "type_safety": "poor",
+          "debugging": "fair"
+        },
+        "notes": [
+          "Needs connection details and db struct tags; the pop CLI and migrations are optional here.",
+          "Where clauses are strings; Destroy reports no rows affected and model lifecycle callbacks run on writes, which hides what a call does."
+        ]
+      },
+      "learning_curve": {
+        "level": "moderate",
+        "notes": [
+          "Part of the Buffalo toolkit, so some documentation assumes the framework; the query API itself is small."
+        ]
+      },
+      "community": {
+        "repo": "gobuffalo/pop",
+        "stars": 1525,
+        "open_issues": 91,
+        "last_release": "2026-09-16",
+        "last_commit": "2026-10-18"
+      },
+      "flexibility": {
+        "capabilities": {
+          "optional_filters": "native",
+          "dynamic_ordering": "native",
+          "conditional_join": "native",
+          "dynamic_projection": "native",
+          "in_list_batch": "partial",
+          "dynamic_pagination": "native"
+        },
+        "notes": [
+          "Query methods (`Where`, `Order`, `Join`/`LeftJoin`/`InnerJoin`, `Select`, `Limit`, `Paginate`) chain on a `*Query`, so each can be applied inside an `if`; `Scope(fn)` packages a reusable step.",
+          "`Where(\"id in (?)\", ids)` expands a slice into an IN list (pop uses it internally for association preloading). Batch insert is partial: `Create` accepts a slice but issues one INSERT per element.",
+          "Caveat: conditions, ordering and join clauses are strings with `?` placeholders, checked at run time; `Order` with user input needs an allow-list."
+        ]
+      }
+    },
+    {
+      "name": "rel",
+      "display": "rel",
+      "module": "rel",
+      "label": "",
+      "version_used": "v0.43.0",
+      "pros": [
+        "Query API covers INSERT, UPDATE (UpdateAny), DELETE (DeleteAny), SELECT and JOIN (JoinOn, one SQL statement); UpdateAny and DeleteAny report rows affected."
+      ],
+      "cons": [
+        "UNION is not expressible without raw SQL, so that cell is n/a.",
+        "The PostgreSQL adapter (go-rel/postgres v0.12.0) has had no release since 2024-05.",
+        "Logs every statement by default; the adapter installs a no-op instrumenter."
+      ],
+      "ease_of_use": {
+        "criteria": {
+          "setup_effort": "good",
+          "query_writing": "good",
+          "type_safety": "fair",
+          "debugging": "good"
+        },
+        "notes": [
+          "Repository style with changesets; no generator, and struct fields map to columns by convention.",
+          "Conditions use typed helpers (where.Eq) but column names are strings; every statement is logged unless an instrumenter is replaced."
+        ]
+      },
+      "learning_curve": {
+        "level": "moderate",
+        "notes": [
+          "Repository, changeset and association concepts to learn; smaller community means fewer worked examples."
+        ]
+      },
+      "community": {
+        "repo": "go-rel/rel",
+        "stars": 786,
+        "open_issues": 30,
+        "last_release": "2026-08-15",
+        "last_commit": "2026-09-07",
+        "note": "The PostgreSQL adapter go-rel/postgres is a separate module that has had no release since 2024-05."
+      },
+      "flexibility": {
+        "capabilities": {
+          "optional_filters": "native",
+          "dynamic_ordering": "native",
+          "conditional_join": "native",
+          "dynamic_projection": "native",
+          "in_list_batch": "native",
+          "dynamic_pagination": "native"
+        },
+        "notes": [
+          "Queries and filters are plain values (`rel.Where`, `where.Eq`/`And`/`Or`/`Not`, `rel.SortAsc`, `rel.Select`, `Join`/`JoinOn`/`JoinWith`, `rel.Limit`, `rel.Offset`), so a `[]rel.Querier` can be assembled with `if`s and passed to `FindAll`.",
+          "`where.In`, `InInt` and `InString` take value lists; `InsertAll` inserts a slice.",
+          "Caveat: field names are strings checked at run time, and `Wheref`/`Joinf`/`where.Fragment` accept raw SQL fragments."
+        ]
+      }
+    },
+    {
+      "name": "sqlboiler",
+      "display": "sqlboiler",
+      "module": "sqlboiler",
+      "label": "",
+      "version_used": "v4.19.7",
+      "pros": [
+        "Typed models, column constants and where helpers generated from the live schema; Update and Delete report rows affected.",
+        "JOIN is qm.InnerJoin bound onto a struct with Bind: one SQL statement."
+      ],
+      "cons": [
+        "UNION is not expressible without raw SQL, so that cell is n/a.",
+        "Needs a generation step against the live database (make gen-sqlboiler, which also needs the sqlboiler-psql driver binary on PATH) and a large amount of committed generated code.",
+        "Insert reports no rows affected, so the adapter counts any error-free insert as 1 row.",
+        "The JOIN clause and the Bind destination (alias-prefixed columns) are written by hand as strings."
+      ],
+      "ease_of_use": {
+        "criteria": {
+          "setup_effort": "poor",
+          "query_writing": "good",
+          "type_safety": "good",
+          "debugging": "good"
+        },
+        "notes": [
+          "Needs the live database, the sqlboiler-psql driver binary and a config file to generate a large body of models.",
+          "Generated where helpers and column constants make most queries typed; JOIN clauses are still strings, and boil.DebugMode prints the SQL."
+        ]
+      },
+      "learning_curve": {
+        "level": "moderate",
+        "notes": [
+          "The generator and its config are the main new thing; the query mods (qm) are small and typed."
+        ]
+      },
+      "community": {
+        "repo": "aarondl/sqlboiler",
+        "stars": 6979,
+        "open_issues": 98,
+        "last_release": "2026-01-01",
+        "last_commit": "2026-07-12",
+        "note": "The release date is the v4.19.7 tag commit; the latest GitHub release is v4.19.5 (2025-06-27)."
+      },
+      "flexibility": {
+        "capabilities": {
+          "optional_filters": "native",
+          "dynamic_ordering": "native",
+          "conditional_join": "native",
+          "dynamic_projection": "native",
+          "in_list_batch": "partial",
+          "dynamic_pagination": "native"
+        },
+        "notes": [
+          "Queries take a list of `qm.QueryMod` values (`qm.Where`, the generated `ModelWhere.Col.EQ(...)` helpers, `qm.OrderBy`, `qm.InnerJoin`, `qm.Load`, `qm.Select`, `qm.Limit`, `qm.Offset`), so a `[]qm.QueryMod` can be assembled with `if`s and passed to `models.Xs(mods...)`.",
+          "Projection: `qm.Select` with `Bind` into a custom struct, or `boil.Whitelist`/`Blacklist` to choose the columns an insert or update writes. IN lists: `qm.WhereIn(\"id in ?\", args...)` or the generated `IN(slice)` helper.",
+          "Batch insert is not offered (no InsertAll in v4.19.7): one `Insert` per row, and `Upsert` takes one row; that is why in_list_batch is partial.",
+          "Caveat: `qm.OrderBy`, `qm.InnerJoin` and the `qm.Where` clause are raw strings checked at run time, so user-supplied column names need an allow-list."
+        ]
+      }
+    },
+    {
+      "name": "gorm_gen",
+      "display": "gorm/gen",
+      "module": "gorm_gen",
+      "label": "",
+      "version_used": "v0.3.29",
+      "pros": [
+        "Typed, field-level query API (fields, conditions, Join, Select) generated on top of GORM from the live schema; Update and Delete report rows affected.",
+        "JOIN is the generated Join with a field Select: one SQL statement."
+      ],
+      "cons": [
+        "UNION is not expressible without raw SQL, so that cell is n/a.",
+        "Create reports no rows affected, so the adapter counts any error-free insert as 1 row.",
+        "No generator CLI in the module: make gen-gormgen runs a small program (internal/adapters/gormgen/generate) against the live database, and the generated code is committed.",
+        "gorm.io/gen v0.3.29 requires gorm.io/plugin/dbresolver v1.5.3, which does not compile against gorm v1.31.2; go.mod pins dbresolver v1.6.2.",
+        "Same GORM defaults as the gorm adapter need care (SkipDefaultTransaction, an explicit column Select so Updates(struct) writes zero values)."
+      ],
+      "ease_of_use": {
+        "criteria": {
+          "setup_effort": "poor",
+          "query_writing": "good",
+          "type_safety": "good",
+          "debugging": "fair"
+        },
+        "notes": [
+          "gorm.io/gen has no CLI: a generator program has to be written and run against the live database, and the module needed a dependency pin to build.",
+          "Generated query objects are typed, but they sit on top of GORM, so its defaults (implicit transactions, zero values in Updates) apply and its debug logging is the only SQL view."
+        ]
+      },
+      "learning_curve": {
+        "level": "steep",
+        "notes": [
+          "Needs GORM first, then the generator and its generated query API."
+        ]
+      },
+      "community": {
+        "repo": "go-gorm/gen",
+        "stars": 2561,
+        "open_issues": 16,
+        "last_release": "2026-08-25",
+        "last_commit": "2026-09-02",
+        "note": "The release date is the v0.3.29 tag commit."
+      },
+      "flexibility": {
+        "capabilities": {
+          "optional_filters": "native",
+          "dynamic_ordering": "native",
+          "conditional_join": "native",
+          "dynamic_projection": "native",
+          "in_list_batch": "native",
+          "dynamic_pagination": "native"
+        },
+        "notes": [
+          "Conditions are typed `gen.Condition` values (`t.Col.Eq(v)`, `Or`, `Not`), so a `[]gen.Condition` can be assembled with `if`s and passed to `Where(conds...)`; `Scopes(func(gen.Dao) gen.Dao)` packages a reusable conditional step.",
+          "Ordering: the generated query struct has `GetFieldByName(name)`, which looks a generated column up at run time and returns an order expression (an unknown name is reported, not injected). `Select`/`Omit` take field lists, `Join`/`LeftJoin` take generated tables, `Limit` and `Offset` apply directly.",
+          "Variable-length input: `t.Col.In(values...)`, `Create(values...)` and `CreateInBatches` for batch inserts.",
+          "Caveat: only tables and columns that were generated are reachable; a changed schema needs regeneration."
+        ]
+      }
+    },
+    {
+      "name": "xorm",
+      "display": "xorm",
+      "module": "xorm",
+      "label": "",
+      "version_used": "v1.4.3",
+      "pros": [
+        "Query API covers INSERT, UPDATE, DELETE, SELECT, JOIN (Table plus Join, one SQL statement) and UNION (xorm.io/builder's Union passed to SQL); writes report rows affected.",
+        "Takes an existing *sql.DB (core.FromDB) and has a pgx dialect."
+      ],
+      "cons": [
+        "The default SnakeMapper maps the field ID to the column i_d; the adapter needs GonicMapper.",
+        "Update(struct) skips zero values (a false Right) unless the columns are named, and Get reports a missing row as found=false, not as an error.",
+        "Conditions, join clauses and the select list are strings checked at run time."
+      ],
+      "ease_of_use": {
+        "criteria": {
+          "setup_effort": "fair",
+          "query_writing": "good",
+          "type_safety": "poor",
+          "debugging": "fair"
+        },
+        "notes": [
+          "The default name mapper turns ID into i_d, so a mapper has to be set; otherwise setup is small and no generator is needed.",
+          "Conditions and join clauses are strings; Update(struct) skips zero values and Get reports a missing row as found=false, both easy to misread."
+        ]
+      },
+      "learning_curve": {
+        "level": "moderate",
+        "notes": [
+          "A session-style API with its own conventions (mappers, Cols, Table plus Join); documentation is thinner than GORM."
+        ]
+      },
+      "community": {
+        "repo": "gitea.com/xorm/xorm",
+        "stars": 409,
+        "open_issues": 399,
+        "last_release": "2026-09-30",
+        "last_commit": "2026-10-23",
+        "note": "Hosted on Gitea rather than GitHub; figures come from the Gitea API (open issues exclude pull requests)."
+      },
+      "flexibility": {
+        "capabilities": {
+          "optional_filters": "native",
+          "dynamic_ordering": "native",
+          "conditional_join": "native",
+          "dynamic_projection": "native",
+          "in_list_batch": "native",
+          "dynamic_pagination": "native"
+        },
+        "notes": [
+          "Each engine call returns a `*Session` that keeps chaining, so `Where`, `And`, `Or`, `Join`, `Select`/`Cols`/`Omit`, `OrderBy`/`Asc`/`Desc` and `Limit` can each be applied inside an `if`; conditions can also be composed as `builder.Cond` values (`builder.Eq`, `builder.And`, `builder.Or`) and passed to `Where`.",
+          "Variable-length input: `In(col, slice...)` and `InsertMulti(slice)` for batch inserts. `Limit(n, start)` covers pagination.",
+          "Caveat: `OrderBy`, `Join` and plain-string `Where` take SQL text, so user-supplied column names need an allow-list."
+        ]
+      }
     }
   ],
   "cell_notes": [
@@ -89,6 +783,16 @@
     {"library": "gorm", "scenario": "union", "note": "n/a: gorm's query API cannot express UNION without raw SQL. The cell is not ranked."},
     {"library": "gorm", "scenario": "insert", "note": "gorm runs with SkipDefaultTransaction; by default it wraps every write in a transaction."},
     {"library": "gorm", "scenario": "update", "note": "gorm runs with SkipDefaultTransaction (by default every write is wrapped in a transaction) and Updates takes an explicit column list, because Updates(struct) skips zero values."},
-    {"library": "gorm", "scenario": "delete", "note": "gorm runs with SkipDefaultTransaction; by default it wraps every write in a transaction."}
+    {"library": "gorm", "scenario": "delete", "note": "gorm runs with SkipDefaultTransaction; by default it wraps every write in a transaction."},
+    {"library": "beego", "scenario": "join", "note": "beego JOIN is RelatedSel on a foreign-key field (one SQL statement, customer loaded with the order)."},
+    {"library": "beego", "scenario": "union", "note": "n/a: beego's query API cannot express UNION without raw SQL. The cell is not ranked."},
+    {"library": "pop", "scenario": "delete", "note": "pop's Destroy reports no rows affected, so the adapter counts any error-free delete as 1 row; the benchmark only deletes existing ids."},
+    {"library": "pop", "scenario": "union", "note": "n/a: pop's query API cannot express UNION without RawQuery. The cell is not ranked."},
+    {"library": "rel", "scenario": "union", "note": "n/a: rel's query API cannot express UNION without raw SQL. The cell is not ranked."},
+    {"library": "sqlboiler", "scenario": "union", "note": "n/a: sqlboiler's query mods cannot express UNION without raw SQL. The cell is not ranked."},
+    {"library": "sqlboiler", "scenario": "insert", "note": "sqlboiler's Insert reports no rows affected, so the adapter counts any error-free insert as 1 row."},
+    {"library": "gorm_gen", "scenario": "union", "note": "n/a: gorm/gen's query API cannot express UNION without raw SQL. The cell is not ranked."},
+    {"library": "xorm", "scenario": "union", "note": "xorm UNION is xorm.io/builder's Union (the query builder xorm itself uses) passed to SQL, so it is measured, not n/a."},
+    {"library": "gorm_gen", "scenario": "insert", "note": "gorm/gen's Create reports no rows affected, so the adapter counts any error-free insert as 1 row; it runs with SkipDefaultTransaction like the gorm adapter."}
   ]
 }

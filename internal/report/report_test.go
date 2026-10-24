@@ -283,3 +283,201 @@ func TestRenderEmptyProsAndCons(t *testing.T) {
 		t.Error("ent has a pro in the rubric; the heading should be present")
 	}
 }
+
+func TestRenderFlexibility(t *testing.T) {
+	// Arrange
+	run, rb := loadFixture(t)
+
+	// Act
+	got, err := Render(run, rb)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("Render() error = %v", err)
+	}
+	start := strings.Index(got, "## Flexibility")
+	if start < 0 {
+		t.Fatalf("no Flexibility section:\n%s", got)
+	}
+	section := got[start:]
+	for _, want := range []string{
+		"qualitative",
+		"not part of the score",
+		"| Library | optional filters | dynamic ordering | conditional join | dynamic projection | in-list / batch | dynamic pagination |",
+		"| ent | native | native | native | partial | native | native |",
+		"| sqlx | raw SQL | raw SQL | raw SQL | raw SQL | native | static only |",
+		"Dynamic SQL is built by hand with a | pipe.",
+		"unverified: named queries only.",
+	} {
+		if !strings.Contains(section, want) {
+			t.Errorf("Flexibility section missing %q:\n%s", want, section)
+		}
+	}
+	if strings.Contains(got[:start], "unverified: named queries only.") {
+		t.Error("flexibility notes leaked outside the Flexibility section")
+	}
+}
+
+func TestRenderFlexibilityDoesNotChangeRanking(t *testing.T) {
+	// Arrange
+	run, rb := loadFixture(t)
+	flipped := rb
+	flipped.Libraries = slices.Clone(rb.Libraries)
+	for i, l := range flipped.Libraries {
+		caps := make(map[string]string, len(l.Flexibility.Capabilities))
+		for name := range l.Flexibility.Capabilities {
+			caps[name] = "static_only"
+		}
+		flipped.Libraries[i].Flexibility = Flexibility{Capabilities: caps, Notes: l.Flexibility.Notes}
+	}
+
+	// Act
+	before, err := Render(run, rb)
+	if err != nil {
+		t.Fatal(err)
+	}
+	after, err := Render(run, flipped)
+
+	// Assert
+	if err != nil {
+		t.Fatal(err)
+	}
+	cut := func(s string) string { return s[:strings.Index(s, "## Flexibility")] }
+	if !strings.Contains(before, "## Flexibility") || !strings.Contains(after, "## Flexibility") {
+		t.Fatal("report has no Flexibility section")
+	}
+	if cut(before) != cut(after) {
+		t.Error("changing flexibility levels changed the report outside the Flexibility section")
+	}
+}
+
+// section returns the text from heading to the next "## " heading or the end.
+func section(t *testing.T, doc, heading string) string {
+	t.Helper()
+	start := strings.Index(doc, heading)
+	if start < 0 {
+		t.Fatalf("no %q section:\n%s", heading, doc)
+	}
+	body := doc[start+len(heading):]
+	if next := strings.Index(body, "\n## "); next >= 0 {
+		body = body[:next]
+	}
+	return body
+}
+
+func TestRenderQualitativeSections(t *testing.T) {
+	tests := []struct {
+		name    string
+		heading string
+		want    []string
+		leakKey string
+	}{
+		{"ease of use", "## Ease of use (qualitative)", []string{
+			"not part of the score",
+			"| Library | setup effort | query writing | type safety | debugging |",
+			"| ent | poor | good | good | fair |",
+			"Ease note for sqlx with a | pipe.",
+		}, "Ease note for"},
+		{"learning curve", "## Learning curve (qualitative)", []string{
+			"| Library | Learning curve |",
+			"| ent | steep |",
+			"| database/sql | gentle |",
+			"Curve note for ent.",
+		}, "Curve note for"},
+		{"community", "## Community support (facts)", []string{
+			"read on 2026-10-24",
+			"| Library | Repository | Stars | Last release | Last commit | Open issues |",
+			"| ent | ent/ent | 17000 | 2026-08-01 | 2026-10-20 | 400 |",
+			"- **database/sql**: Counts cover the whole Go project.",
+		}, "ent/ent"},
+	}
+	run, rb := loadFixture(t)
+	got, err := Render(run, rb)
+	if err != nil {
+		t.Fatalf("Render() error = %v", err)
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
+			// (got was rendered once above)
+
+			// Act
+			body := section(t, got, tt.heading)
+			start := strings.Index(got, tt.heading)
+
+			// Assert
+			for _, want := range tt.want {
+				if !strings.Contains(body, want) {
+					t.Errorf("%s section missing %q:\n%s", tt.name, want, body)
+				}
+			}
+			if strings.Contains(got[:start], tt.leakKey) {
+				t.Errorf("%s content leaked before its section", tt.name)
+			}
+		})
+	}
+}
+
+func TestRenderQualitativeDoesNotChangeRanking(t *testing.T) {
+	// Arrange
+	run, rb := loadFixture(t)
+	changed := rb
+	changed.Libraries = slices.Clone(rb.Libraries)
+	for i, l := range changed.Libraries {
+		criteria := make(map[string]string, len(l.EaseOfUse.Criteria))
+		for name := range l.EaseOfUse.Criteria {
+			criteria[name] = "poor"
+		}
+		changed.Libraries[i].EaseOfUse = EaseOfUse{Criteria: criteria, Notes: l.EaseOfUse.Notes}
+		changed.Libraries[i].LearningCurve.Level = "steep"
+		changed.Libraries[i].Community.Stars = 1
+	}
+
+	// Act
+	before, err := Render(run, rb)
+	if err != nil {
+		t.Fatal(err)
+	}
+	after, err := Render(run, changed)
+
+	// Assert
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(before, "## Ease of use") || !strings.Contains(after, "## Ease of use") {
+		t.Fatal("report has no Ease of use section")
+	}
+	cut := func(s string) string { return s[:strings.Index(s, "## Ease of use")] }
+	if cut(before) != cut(after) {
+		t.Error("changing qualitative ratings changed the report before the Ease of use section")
+	}
+}
+
+func TestRenderQualitativeSubsetRun(t *testing.T) {
+	// Arrange: a rubric entry whose library is absent from the run must not be printed.
+	run, rb := loadFixture(t)
+	var cells []result.Cell
+	for _, c := range run.Cells {
+		if c.Library != "sqlx" {
+			cells = append(cells, c)
+		}
+	}
+	run.Cells = cells
+
+	// Act
+	got, err := Render(run, rb)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("Render() error = %v", err)
+	}
+	for _, heading := range []string{"## Ease of use (qualitative)", "## Learning curve (qualitative)", "## Community support (facts)"} {
+		body := section(t, got, heading)
+		if strings.Contains(body, "sqlx") {
+			t.Errorf("%s lists sqlx although it is not in the run", heading)
+		}
+		if !strings.Contains(body, "ent") {
+			t.Errorf("%s lost ent, which is in the run", heading)
+		}
+	}
+}

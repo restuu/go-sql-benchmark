@@ -133,7 +133,7 @@ func TestRunOutIntoUnwritablePathFails(t *testing.T) {
 // mirrors cmd/bench registry (package main of another command, so not importable): update both
 // together when a library is added.
 func TestRealRubric(t *testing.T) {
-	registry := []string{"database_sql", "ent", "gorm", "jet", "sqlc", "sqlx"}
+	registry := []string{"beego", "bun", "database_sql", "ent", "gorm", "gorm_gen", "jet", "pgx", "pgx_pool", "pop", "rel", "sqlboiler", "sqlc", "sqlx", "xorm"}
 
 	// Arrange
 	rb, err := report.LoadRubric(realRubric)
