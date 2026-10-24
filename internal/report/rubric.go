@@ -43,6 +43,9 @@ type CellNote struct {
 	Library  string `json:"library"`
 	Scenario string `json:"scenario"`
 	Note     string `json:"note"`
+	// Feature marks a note that qualifies how the library supports the scenario; it is also
+	// printed under the feature matrix.
+	Feature bool `json:"feature,omitempty"`
 }
 
 // Rubric holds every hand-written part of the report.
@@ -156,6 +159,17 @@ func (rb Rubric) notesFor(library, scenario string) []string {
 	var notes []string
 	for _, n := range rb.CellNotes {
 		if n.Library == library && n.Scenario == scenario {
+			notes = append(notes, n.Note)
+		}
+	}
+	return notes
+}
+
+// featureNotes returns the notes of one cell that qualify feature support, in rubric order.
+func (rb Rubric) featureNotes(library, scenario string) []string {
+	var notes []string
+	for _, n := range rb.CellNotes {
+		if n.Feature && n.Library == library && n.Scenario == scenario {
 			notes = append(notes, n.Note)
 		}
 	}

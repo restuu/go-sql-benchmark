@@ -4,7 +4,7 @@
 
 Run started 2026-10-21T04:58:02Z (UTC). Numbers are only comparable on the same machine.
 
-Compares 3 libraries on three measures: **latency** (p95, the time within which 95% of calls finished), **memory** (B/op, bytes allocated per operation) and **CPU** (CPU ns/op, CPU time per operation). Each library runs 6 scenarios under 2 load profiles; a **case** is one scenario under one load profile, written scenario/profile, for example join/low.
+Compares 3 libraries on three measures: **latency** (p95, the time within which 95% of calls finished), **memory** (B/op, bytes allocated per operation) and **CPU** (CPU ns/op, CPU time per operation). Each library runs 6 scenarios under 2 load profiles; a **case** is one scenario under one load profile, written scenario/profile, for example join/low. Union is measured but not scored (see Union below); the other 5 scenarios, 10 cases, make up every score.
 
 This is the summary. The per-case tables, pros and cons, and the qualitative sections (flexibility, ease of use, learning curve, community and a separate qualitative ranking) are in the [detailed report](REPORT.md).
 
@@ -20,19 +20,19 @@ Each number is compared with plain `database/sql`, Go's built-in way to talk to 
 
 So "p95 1.04x, B/op 1.43x, CPU ns/op 1.03x" reads: this library's calls take 4% longer, use 43% more memory and use 3% more processor time than `database/sql`.
 
-A library's **score** combines its three ratios over every case into one number (see the [glossary](#glossary) for how). `1.00` is the same as `database/sql`, `2.00` is twice as costly, `0.50` half. Lower is better. Other terms, such as scenario, load profile and ORM, are in the [glossary](#glossary).
+A library's **score** combines its three ratios over every scored case into one number (see the [glossary](#glossary) for how). `1.00` is the same as `database/sql`, `2.00` is twice as costly, `0.50` half. Lower is better. Other terms, such as scenario, load profile and ORM, are in the [glossary](#glossary).
 
 ## Top 5
 
-Score is the weighted geometric mean, over every ranked case, of each metric's ratio to database/sql (p95 1, B/op 1, CPU ns/op 1). 1.00 means the same as database/sql, 2.00 twice as much, 0.50 half; lower is better. A case needs a measured database/sql result to be scored.
+Score is the weighted geometric mean, over every ranked case, of each metric's ratio to database/sql (p95 1, B/op 1, CPU ns/op 1). 1.00 means the same as database/sql, 2.00 twice as much, 0.50 half; lower is better. Union is not scored, and a case needs a measured database/sql result to be scored.
 
 Libraries with equal scores share a rank.
 
 | Rank | Library | Score | Ranked cases |
 |---:|---|---:|---:|
-| 1 | database/sql | 1.00 | 12/12 |
-| 2 | sqlx | 1.22 | 12/12 |
-| 3 | ent | 1.90 | 10/12 |
+| 1 | database/sql | 1.00 | 10/10 |
+| 2 | sqlx | 1.14 | 10/10 |
+| 3 | ent | 1.90 | 10/10 |
 
 **database/sql**
 
@@ -40,14 +40,36 @@ Libraries with equal scores share a rank.
 
 **sqlx**
 
-- ratio to database/sql (geometric mean over ranked cases, 1.00 = same, lower is better): p95 1.02x, B/op 1.45x, CPU ns/op 1.24x
-- slowest case: union/low (p95 1.37x database/sql)
+- ratio to database/sql (geometric mean over ranked cases, 1.00 = same, lower is better): p95 1.00x, B/op 1.25x, CPU ns/op 1.18x
+- slowest case: delete/low (p95 1.35x database/sql)
 
 **ent**
 
 - ratio to database/sql (geometric mean over ranked cases, 1.00 = same, lower is better): p95 1.35x, B/op 4.20x, CPU ns/op 1.22x
 - slowest case: delete/stress (p95 2.48x database/sql)
-- judged on 10 of 12 cases
+
+## Feature matrix
+
+Which scenarios each library expresses with its own query API. `n/a` means it needs hand-written SQL for that scenario.
+
+| Library | insert | update | delete | select | join | union |
+|---|---|---|---|---|---|---|
+| database/sql | native | native | native | native | native | native |
+| sqlx | native | native | native | native | native | native |
+| ent | native | native | native | native | native [1] | n/a |
+
+1. ent JOIN is edge eager-loading: two queries, not one SQL JOIN.
+
+## Union
+
+UNION is measured for every library that can express it natively but is not part of any score above. This ranking uses the same ratio to database/sql, over the union cases only (every load profile).
+
+| Rank | Library | Score | Ranked cases | p95 | B/op | CPU ns/op |
+|---:|---|---:|---:|---:|---:|---:|
+| 1 | database/sql | 1.00 | 2/2 | 1.00x | 1.00x | 1.00x |
+| 2 | sqlx | 1.74 | 2/2 | 1.11x | 3.01x | 1.57x |
+
+No ranked union result: ent.
 
 ## Run it yourself
 
@@ -179,7 +201,7 @@ Plain-language meanings of the terms used in this report. `REPORT.md` uses the s
 - **delete**: remove one row.
 - **select**: read one row by its id.
 - **join**: read the orders of one customer together with that customer's details, which live in two tables (10 rows).
-- **union**: combine two lists, the customers and the suppliers of one city, into one result (40 rows).
+- **union**: combine two lists, the customers and the suppliers of one city, into one result (40 rows). It is reported separately and is not part of the score, because some libraries cannot express it without hand-written SQL.
 - **load profile**: how hard the database is pushed. **low** is a quiet application: 4 callers, each pausing 10 ms between calls. **stress** is a busy one: 100 callers hitting the database without pausing.
 - **low**: the quiet load profile (4 workers, 10 ms between calls).
 - **stress**: the busy load profile (100 workers, no pauses).

@@ -19,6 +19,18 @@ Each table is one scenario under one load profile (a case); each row is one libr
 - `[n]` points to the numbered note under the table.
 - `n/a (...)` means the library cannot express the scenario; the case is not ranked.
 
+## Feature matrix
+
+Which scenarios each library expresses with its own query API. `n/a` means it needs hand-written SQL for that scenario.
+
+| Library | insert | update | delete | select | join | union |
+|---|---|---|---|---|---|---|
+| database/sql | native | native | native | native | native | native |
+| sqlx | native | native | native | native | native | native |
+| ent | native | native | native | native | native [1] | n/a |
+
+1. ent JOIN is edge eager-loading: two queries, not one SQL JOIN.
+
 ## Results
 
 ### Profile: low

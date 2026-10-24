@@ -50,12 +50,15 @@ func Render(run result.Run, rb Rubric, files Files) (Report, error) {
 		return Report{}, err
 	}
 	r := rankCells(run, rb.Weights, rb.honorableMentions())
+	unionRank := rankScenarios(run, rb.Weights, rb.honorableMentions(), []bench.Scenario{unscoredScenario})
 
 	var summary strings.Builder
 	writeHeader(&summary, run, files)
 	summary.WriteString(strings.TrimSpace(reading) + "\n\n")
 	writeTop(&summary, rb, r)
 	writeHonorableMention(&summary, rb, r)
+	writeFeatureMatrix(&summary, run, rb, r)
+	writeUnion(&summary, rb, unionRank)
 	summary.WriteString(strings.TrimSpace(usage) + "\n\n")
 	writeLibraries(&summary, run, rb, r)
 	writeConfig(&summary, run)
@@ -65,6 +68,7 @@ func Render(run result.Run, rb Rubric, files Files) (Report, error) {
 	var details strings.Builder
 	writeDetailsHeader(&details, files)
 	writeReadingTables(&details)
+	writeFeatureMatrix(&details, run, rb, r)
 	writeTables(&details, run, rb, r)
 	writeProsCons(&details, rb, r)
 	writeFlexibility(&details, rb, r)
@@ -111,8 +115,10 @@ func writeHeader(sb *strings.Builder, run result.Run, files Files) {
 	fmt.Fprintf(sb, "Compares %d libraries on three measures: **latency** (p95, the time within which 95%% of calls finished), "+
 		"**memory** (B/op, bytes allocated per operation) and **CPU** (CPU ns/op, CPU time per operation). "+
 		"Each library runs %d scenarios under %d load profiles; a **case** is one scenario under one load profile, "+
-		"written scenario/profile, for example join/low.\n\n",
-		len(libraryNames(run)), len(bench.AllScenarios), len(run.Config.Profiles))
+		"written scenario/profile, for example join/low. Union is measured but not scored (see Union below); "+
+		"the other %d scenarios, %d cases, make up every score.\n\n",
+		len(libraryNames(run)), len(bench.AllScenarios), len(run.Config.Profiles),
+		len(scoredScenarios()), len(scoredScenarios())*len(run.Config.Profiles))
 	fmt.Fprintf(sb, "This is the summary. The per-case tables, pros and cons, and the qualitative sections (flexibility, ease of use, learning curve, community and a separate qualitative ranking) are in the [detailed report](%s).\n\n", url.PathEscape(files.Details))
 }
 
@@ -196,7 +202,7 @@ func writeTables(sb *strings.Builder, run result.Run, rb Rubric, r ranking) {
 
 func writeTop(sb *strings.Builder, rb Rubric, r ranking) {
 	fmt.Fprintf(sb, "## Top %d\n\n", topCount)
-	fmt.Fprintf(sb, "Score is the weighted geometric mean, over every ranked case, of each metric's ratio to database/sql (%s). 1.00 means the same as database/sql, 2.00 twice as much, 0.50 half; lower is better. A case needs a measured database/sql result to be scored.\n\n", weightsText(rb.Weights))
+	fmt.Fprintf(sb, "Score is the weighted geometric mean, over every ranked case, of each metric's ratio to database/sql (%s). 1.00 means the same as database/sql, 2.00 twice as much, 0.50 half; lower is better. Union is not scored, and a case needs a measured database/sql result to be scored.\n\n", weightsText(rb.Weights))
 	sb.WriteString("Libraries with equal scores share a rank.\n\n")
 	if len(r.mentions()) > 0 {
 		sb.WriteString("Only libraries that are not tied to one database are ranked; the others are under Honorable mention.\n\n")

@@ -27,7 +27,8 @@ func main() {
 }
 
 // run returns the process exit code: 0 within tolerance and the same top 5, 1 beyond tolerance, on a missing
-// cell or when the top 5 (membership or order) differ, 2 on usage or load errors.
+// cell or when the top 5 (membership or order) differ, 2 on usage or load errors. The top 5 is
+// scored without union; the per-case p95 comparison still covers every case.
 func run(args []string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("benchcmp", flag.ContinueOnError)
 	fs.SetOutput(stderr)

@@ -19,6 +19,32 @@ Each table is one scenario under one load profile (a case); each row is one libr
 - `[n]` points to the numbered note under the table.
 - `n/a (...)` means the library cannot express the scenario; the case is not ranked.
 
+## Feature matrix
+
+Which scenarios each library expresses with its own query API. `n/a` means it needs hand-written SQL for that scenario.
+
+| Library | insert | update | delete | select | join | union |
+|---|---|---|---|---|---|---|
+| pgx_pool | native | native | native | native | native | native |
+| pgx | native | native | native | native | native | native |
+| database/sql | native | native | native | native | native | native |
+| sqlx | native | native | native | native | native | native |
+| sqlc | native | native | native | native | native | native |
+| sqlboiler | native | native | native | native | native | n/a |
+| beego | native | native | native | native | native [1] | n/a |
+| rel | native | native | native | native | native | n/a |
+| pop | native | native | native | native | native | n/a |
+| ent | native | native | native | native | native [2] | n/a |
+| go-jet | native | native | native | native | native | native |
+| xorm | native | native | native | native | native | native [3] |
+| gorm | native | native | native | native | native | n/a |
+| bun | native | native | native | native | native | native |
+| gorm/gen | native | native | native | native | native | n/a |
+
+1. beego JOIN is RelatedSel on a foreign-key field (one SQL statement, customer loaded with the order).
+2. ent JOIN is edge eager-loading (WithCustomer): two queries, orders then their customers, not one SQL JOIN. Read its JOIN numbers with that in mind.
+3. xorm UNION is xorm.io/builder's Union (the query builder xorm itself uses) passed to SQL, so it is measured, not n/a.
+
 ## Results
 
 ### Profile: low
@@ -30,16 +56,16 @@ Each table is one scenario under one load profile (a case); each row is one libr
 | pgx_pool | 2.6 ms | 5.1 ms | 8.1 ms | 399 | 572 | 12.0 | 269055 | 0.00 | +8.2% | 17.4% * |
 | pgx | 2.5 ms | 4.2 ms | 7.6 ms | 399 | 616 | 12.2 | 222632 | 0.00 | -10.8% | 32.1% * |
 | database/sql | 2.7 ms | 4.7 ms | 7.7 ms | 399 | 873 | 14.0 | 238217 | 0.00 | baseline | 264.2% * |
-| sqlc | 2.7 ms | 4.8 ms | 7.5 ms | 399 | 1031 | 15.2 | 262986 | 0.00 | +1.0% | 1.0% |
 | sqlx | 2.6 ms | 4.7 ms | 6.9 ms | 399 | 918 | 14.2 | 261285 | 0.00 | -1.2% | 11.7% * |
+| sqlc | 2.7 ms | 4.8 ms | 7.5 ms | 399 | 1031 | 15.2 | 262986 | 0.00 | +1.0% | 1.0% |
 | sqlboiler [1] | 2.7 ms | 5.0 ms | 8.4 ms | 399 | 1969 | 36.2 | 323820 | 0.00 | +6.1% | 16.9% * |
 | beego | 2.6 ms | 4.4 ms | 7.0 ms | 399 | 2887 | 50.0 | 293550 | 0.00 | -6.4% | 11.6% * |
 | rel | 2.8 ms | 6.0 ms | 9.5 ms | 399 | 3101 | 45.1 | 330510 | 0.00 | +25.5% | 35.3% * |
 | pop | 2.8 ms | 5.7 ms | 9.6 ms | 399 | 5762 | 175.1 | 415978 | 0.00 | +20.9% | 25.5% * |
 | ent | 2.8 ms | 5.6 ms | 7.3 ms | 399 | 4387 | 98.0 | 341688 | 0.00 | +18.2% | 31.4% * |
-| gorm [2] | 2.7 ms | 4.6 ms | 6.6 ms | 399 | 6827 | 77.0 | 332711 | 0.00 | -3.5% | 9.1% |
 | go-jet | 2.7 ms | 5.2 ms | 9.2 ms | 399 | 3531 | 87.0 | 337920 | 0.00 | +9.6% | 43.3% * |
 | xorm | 2.7 ms | 5.5 ms | 7.8 ms | 399 | 4660 | 94.0 | 364939 | 0.00 | +15.5% | 45.9% * |
+| gorm [2] | 2.7 ms | 4.6 ms | 6.6 ms | 399 | 6827 | 77.0 | 332711 | 0.00 | -3.5% | 9.1% |
 | bun | 2.9 ms | 5.8 ms | 9.8 ms | 399 | 6086 | 27.2 | 339448 | 0.00 | +21.8% | 27.8% * |
 | gorm/gen [3] | 2.9 ms | 5.6 ms | 10 ms | 399 | 6842 | 77.2 | 391201 | 0.00 | +17.5% | 30.0% * |
 
@@ -54,16 +80,16 @@ Each table is one scenario under one load profile (a case); each row is one libr
 | pgx_pool | 2.9 ms | 5.3 ms | 8.7 ms | 399 | 596 | 14.0 | 270594 | 0.00 | +11.6% | 21.2% * |
 | pgx | 2.4 ms | 4.4 ms | 6.8 ms | 399 | 641 | 14.1 | 234686 | 0.00 | -7.4% | 17.5% * |
 | database/sql | 2.6 ms | 4.7 ms | 7.4 ms | 399 | 974 | 16.1 | 267742 | 0.00 | baseline | 19.4% * |
-| sqlc | 2.7 ms | 6.4 ms | 10 ms | 399 | 1049 | 16.0 | 256903 | 0.00 | +35.2% | 21.6% * |
 | sqlx | 2.7 ms | 4.6 ms | 6.8 ms | 399 | 929 | 16.0 | 265106 | 0.00 | -3.3% | 8.2% |
+| sqlc | 2.7 ms | 6.4 ms | 10 ms | 399 | 1049 | 16.0 | 256903 | 0.00 | +35.2% | 21.6% * |
 | sqlboiler | 2.6 ms | 4.6 ms | 7.5 ms | 399 | 1231 | 20.1 | 272465 | 0.00 | -3.6% | 10.2% * |
 | beego | 2.6 ms | 4.0 ms | 7.0 ms | 399 | 2043 | 32.0 | 252976 | 0.00 | -14.6% | 18.6% * |
 | rel | 2.9 ms | 5.4 ms | 7.8 ms | 399 | 2467 | 33.0 | 293692 | 0.00 | +15.0% | 47.8% * |
 | pop | 2.8 ms | 5.0 ms | 7.4 ms | 399 | 5779 | 159.0 | 319108 | 0.00 | +5.0% | 2.8% |
 | ent | 2.8 ms | 5.0 ms | 7.5 ms | 399 | 4919 | 101.0 | 298962 | 0.00 | +5.0% | 10.7% * |
-| gorm [1] | 2.8 ms | 5.2 ms | 8.4 ms | 399 | 7902 | 80.1 | 349931 | 0.00 | +9.0% | 15.1% * |
 | go-jet | 2.8 ms | 4.8 ms | 7.1 ms | 399 | 3989 | 100.1 | 314261 | 0.00 | +1.1% | 73.1% * |
 | xorm | 2.7 ms | 5.7 ms | 9.3 ms | 399 | 5982 | 157.0 | 331545 | 0.00 | +21.3% | 19.1% * |
+| gorm [1] | 2.8 ms | 5.2 ms | 8.4 ms | 399 | 7902 | 80.1 | 349931 | 0.00 | +9.0% | 15.1% * |
 | bun | 2.9 ms | 5.2 ms | 8.0 ms | 399 | 5961 | 19.0 | 294619 | 0.00 | +10.9% | 31.6% * |
 | gorm/gen | 3.0 ms | 6.1 ms | 9.8 ms | 399 | 15429 | 290.0 | 444888 | 0.00 | +28.1% | 11.3% * |
 
@@ -76,16 +102,16 @@ Each table is one scenario under one load profile (a case); each row is one libr
 | pgx_pool | 2.8 ms | 5.5 ms | 7.9 ms | 399 | 412 | 9.0 | 253830 | 0.00 | +13.2% | 7.4% |
 | pgx | 2.4 ms | 4.7 ms | 8.1 ms | 399 | 412 | 9.0 | 205084 | 0.00 | -2.5% | 15.0% * |
 | database/sql | 2.7 ms | 4.8 ms | 7.4 ms | 399 | 473 | 11.0 | 252604 | 0.00 | baseline | 14.4% * |
-| sqlc | 2.7 ms | 6.3 ms | 11 ms | 399 | 525 | 11.2 | 237626 | 0.00 | +29.4% | 28.1% * |
 | sqlx | 2.8 ms | 5.8 ms | 9.1 ms | 399 | 473 | 11.0 | 253008 | 0.00 | +20.5% | 15.2% * |
+| sqlc | 2.7 ms | 6.3 ms | 11 ms | 399 | 525 | 11.2 | 237626 | 0.00 | +29.4% | 28.1% * |
 | sqlboiler | 2.7 ms | 4.9 ms | 7.3 ms | 399 | 601 | 13.0 | 248918 | 0.00 | +2.2% | 33.8% * |
 | beego | 2.5 ms | 4.8 ms | 7.4 ms | 399 | 886 | 19.2 | 228782 | 0.00 | -1.3% | 10.9% * |
 | rel | 2.9 ms | 5.6 ms | 8.8 ms | 399 | 881 | 21.0 | 272979 | 0.00 | +16.1% | 41.3% * |
 | pop [1] | 2.8 ms | 6.5 ms | 9.9 ms | 399 | 1090 | 32.0 | 257864 | 0.00 | +34.3% | 29.6% * |
 | ent | 2.8 ms | 4.8 ms | 6.7 ms | 399 | 2121 | 44.0 | 285870 | 0.00 | +0.0% | 9.5% |
-| gorm [2] | 2.7 ms | 5.3 ms | 8.2 ms | 399 | 4224 | 49.2 | 267244 | 0.00 | +9.8% | 30.2% * |
 | go-jet | 2.7 ms | 5.9 ms | 9.5 ms | 399 | 1553 | 36.0 | 255937 | 0.00 | +21.0% | 42.6% * |
 | xorm | 2.8 ms | 5.0 ms | 7.4 ms | 399 | 3692 | 102.0 | 289071 | 0.00 | +2.4% | 16.2% * |
+| gorm [2] | 2.7 ms | 5.3 ms | 8.2 ms | 399 | 4224 | 49.2 | 267244 | 0.00 | +9.8% | 30.2% * |
 | bun | 2.8 ms | 4.6 ms | 6.9 ms | 399 | 5141 | 13.1 | 275494 | 0.00 | -4.4% | 57.0% * |
 | gorm/gen | 2.8 ms | 5.0 ms | 7.4 ms | 399 | 4480 | 52.0 | 306909 | 0.00 | +4.1% | 3.9% |
 
@@ -99,16 +125,16 @@ Each table is one scenario under one load profile (a case); each row is one libr
 | pgx_pool | 778 µs | 2.2 ms | 9.8 ms | 399 | 1305 | 17.2 | 238340 | 0.00 | -1.1% | 28.0% * |
 | pgx | 806 µs | 3.2 ms | 7.0 ms | 399 | 1258 | 18.0 | 228220 | 0.00 | +42.3% | 77.8% * |
 | database/sql | 831 µs | 2.2 ms | 5.2 ms | 399 | 1995 | 50.1 | 281865 | 0.00 | baseline | 40.4% * |
-| sqlc | 798 µs | 1.7 ms | 5.3 ms | 399 | 1991 | 51.2 | 293308 | 0.00 | -22.3% | 69.6% * |
 | sqlx | 816 µs | 1.8 ms | 6.5 ms | 399 | 2367 | 55.2 | 297813 | 0.00 | -20.9% | 8.7% |
+| sqlc | 798 µs | 1.7 ms | 5.3 ms | 399 | 1991 | 51.2 | 293308 | 0.00 | -22.3% | 69.6% * |
 | sqlboiler | 815 µs | 1.9 ms | 4.4 ms | 399 | 2170 | 53.1 | 304418 | 0.00 | -16.8% | 26.0% * |
 | beego | 874 µs | 2.0 ms | 6.5 ms | 399 | 3329 | 103.0 | 309084 | 0.00 | -8.9% | 16.8% * |
 | rel | 862 µs | 2.4 ms | 6.9 ms | 399 | 3530 | 74.1 | 332536 | 0.00 | +6.3% | 96.1% * |
 | pop | 879 µs | 1.9 ms | 6.4 ms | 399 | 3880 | 87.2 | 360258 | 0.00 | -14.3% | 123.8% * |
 | ent | 866 µs | 2.3 ms | 5.9 ms | 399 | 5572 | 145.1 | 359600 | 0.00 | +2.0% | 28.2% * |
-| gorm | 870 µs | 2.7 ms | 5.4 ms | 399 | 6044 | 100.4 | 363423 | 0.00 | +19.1% | 28.2% * |
 | go-jet | 946 µs | 3.2 ms | 7.4 ms | 399 | 12081 | 221.6 | 429824 | 0.00 | +41.0% | 65.5% * |
 | xorm | 900 µs | 2.4 ms | 7.8 ms | 399 | 7748 | 208.5 | 381459 | 0.00 | +5.8% | 22.6% * |
+| gorm | 870 µs | 2.7 ms | 5.4 ms | 399 | 6044 | 100.4 | 363423 | 0.00 | +19.1% | 28.2% * |
 | bun | 1.4 ms | 3.5 ms | 6.7 ms | 399 | 8051 | 72.9 | 446226 | 0.00 | +53.8% | 23.7% * |
 | gorm/gen | 845 µs | 2.0 ms | 5.2 ms | 399 | 6169 | 98.4 | 350000 | 0.00 | -8.7% | 22.8% * |
 
@@ -119,16 +145,16 @@ Each table is one scenario under one load profile (a case); each row is one libr
 | pgx_pool | 908 µs | 2.2 ms | 6.0 ms | 399 | 2882 | 63.5 | 261638 | 0.00 | -1.7% | 25.5% * |
 | pgx | 930 µs | 4.1 ms | 6.7 ms | 399 | 8387 | 87.5 | 265488 | 0.00 | +83.4% | 41.6% * |
 | database/sql | 1.2 ms | 2.3 ms | 5.4 ms | 399 | 3645 | 184.6 | 528180 | 0.00 | baseline | 20.8% * |
-| sqlc | 1.1 ms | 2.1 ms | 5.1 ms | 399 | 8143 | 193.9 | 522258 | 0.00 | -7.6% | 28.7% * |
 | sqlx | 1.2 ms | 2.4 ms | 7.2 ms | 399 | 9191 | 207.6 | 557628 | 0.00 | +6.7% | 33.5% * |
+| sqlc | 1.1 ms | 2.1 ms | 5.1 ms | 399 | 8143 | 193.9 | 522258 | 0.00 | -7.6% | 28.7% * |
 | sqlboiler | 1.2 ms | 2.6 ms | 6.8 ms | 399 | 14746 | 260.5 | 595394 | 0.00 | +17.5% | 17.9% * |
 | beego [1] | 1.1 ms | 2.7 ms | 6.8 ms | 399 | 12101 | 534.8 | 433597 | 0.00 | +17.7% | 15.2% * |
 | rel | 1.1 ms | 2.7 ms | 6.1 ms | 399 | 20123 | 353.4 | 507500 | 0.00 | +21.5% | 59.3% * |
 | pop | 1.3 ms | 2.4 ms | 6.2 ms | 399 | 13993 | 294.7 | 696742 | 0.00 | +8.4% | 208.7% * |
 | ent [2] | 1.4 ms | 5.7 ms | 14 ms | 399 | 13858 | 346.4 | 537611 | 0.00 | +154.5% | 55.6% * |
-| gorm | 1.4 ms | 3.2 ms | 7.9 ms | 399 | 17400 | 407.3 | 555930 | 0.00 | +40.2% | 19.8% * |
 | go-jet | 1.2 ms | 2.9 ms | 7.8 ms | 399 | 37457 | 692.0 | 638178 | 0.00 | +27.1% | 85.8% * |
 | xorm | 1.2 ms | 3.1 ms | 7.0 ms | 399 | 23678 | 610.6 | 560959 | 0.00 | +39.3% | 2.1% |
+| gorm | 1.4 ms | 3.2 ms | 7.9 ms | 399 | 17400 | 407.3 | 555930 | 0.00 | +40.2% | 19.8% * |
 | bun | 1.5 ms | 3.2 ms | 7.3 ms | 399 | 13295 | 210.5 | 481428 | 0.00 | +40.7% | 19.9% * |
 | gorm/gen | 1.4 ms | 2.9 ms | 8.4 ms | 399 | 23547 | 485.9 | 744287 | 0.00 | +28.9% | 13.8% * |
 
@@ -142,27 +168,27 @@ Each table is one scenario under one load profile (a case); each row is one libr
 | pgx_pool | 1.3 ms | 2.7 ms | 7.6 ms | 399 | 4640 | 171.0 | 265888 | 0.00 | +6.2% | 22.4% * |
 | pgx | 1.2 ms | 3.6 ms | 7.6 ms | 399 | 14660 | 257.0 | 295240 | 0.00 | +43.2% | 65.8% * |
 | database/sql | 1.4 ms | 2.5 ms | 6.0 ms | 399 | 5381 | 270.0 | 346100 | 0.00 | baseline | 1.4% |
-| sqlc | 1.3 ms | 2.6 ms | 5.9 ms | 399 | 14743 | 315.8 | 393184 | 0.00 | +3.0% | 13.9% * |
 | sqlx | 1.5 ms | 2.7 ms | 7.2 ms | 399 | 15928 | 358.9 | 421506 | 0.00 | +8.3% | 8.9% |
+| sqlc | 1.3 ms | 2.6 ms | 5.9 ms | 399 | 14743 | 315.8 | 393184 | 0.00 | +3.0% | 13.9% * |
 | sqlboiler [1] | n/a (unsupported) | - | - | - | - | - | - | - | - | - |
 | beego [2] | n/a (unsupported) | - | - | - | - | - | - | - | - | - |
 | rel [3] | n/a (unsupported) | - | - | - | - | - | - | - | - | - |
 | pop [4] | n/a (unsupported) | - | - | - | - | - | - | - | - | - |
 | ent [5] | n/a (unsupported) | - | - | - | - | - | - | - | - | - |
-| gorm [6] | n/a (unsupported) | - | - | - | - | - | - | - | - | - |
 | go-jet | 1.4 ms | 4.2 ms | 8.9 ms | 399 | 48839 | 794.0 | 681392 | 0.00 | +66.5% | 41.1% * |
-| xorm [7] | 1.5 ms | 3.5 ms | 9.7 ms | 399 | 39568 | 1010.0 | 602618 | 0.00 | +40.2% | 48.4% * |
+| xorm [6] | 1.5 ms | 3.5 ms | 9.7 ms | 399 | 39568 | 1010.0 | 602618 | 0.00 | +40.2% | 48.4% * |
+| gorm [7] | n/a (unsupported) | - | - | - | - | - | - | - | - | - |
 | bun | 1.3 ms | 3.4 ms | 8.1 ms | 399 | 20433 | 337.2 | 471253 | 0.00 | +34.7% | 34.7% * |
 | gorm/gen [8] | n/a (unsupported) | - | - | - | - | - | - | - | - | - |
 
-1. n/a: sqlboiler's query mods cannot express UNION without raw SQL. The case is not ranked.
-2. n/a: beego's query API cannot express UNION without raw SQL. The case is not ranked.
-3. n/a: rel's query API cannot express UNION without raw SQL. The case is not ranked.
-4. n/a: pop's query API cannot express UNION without RawQuery. The case is not ranked.
-5. n/a: ent's query API cannot express UNION, and using raw SQL would not measure ent. The case is not ranked.
-6. n/a: gorm's query API cannot express UNION without raw SQL. The case is not ranked.
-7. xorm UNION is xorm.io/builder's Union (the query builder xorm itself uses) passed to SQL, so it is measured, not n/a.
-8. n/a: gorm/gen's query API cannot express UNION without raw SQL. The case is not ranked.
+1. n/a: sqlboiler's query mods cannot express UNION without raw SQL.
+2. n/a: beego's query API cannot express UNION without raw SQL.
+3. n/a: rel's query API cannot express UNION without raw SQL.
+4. n/a: pop's query API cannot express UNION without RawQuery.
+5. n/a: ent's query API cannot express UNION, and using raw SQL would not measure ent.
+6. xorm UNION is xorm.io/builder's Union (the query builder xorm itself uses) passed to SQL, so it is measured, not n/a.
+7. n/a: gorm's query API cannot express UNION without raw SQL.
+8. n/a: gorm/gen's query API cannot express UNION without raw SQL.
 
 ### Profile: stress
 
@@ -173,16 +199,16 @@ Each table is one scenario under one load profile (a case); each row is one libr
 | pgx_pool | 2.7 ms | 4.4 ms | 7.9 ms | 22759 | 570 | 12.0 | 45826 | 0.00 | +4.0% | 11.2% * |
 | pgx | 2.7 ms | 4.3 ms | 8.1 ms | 21268 | 570 | 12.0 | 40857 | 0.00 | +3.7% | 7.6% |
 | database/sql | 2.7 ms | 4.2 ms | 7.2 ms | 23152 | 872 | 14.0 | 46318 | 0.00 | baseline | 3.3% |
-| sqlc | 2.8 ms | 4.3 ms | 7.3 ms | 23385 | 984 | 15.0 | 46388 | 0.00 | +2.5% | 10.1% * |
 | sqlx | 2.7 ms | 4.3 ms | 7.7 ms | 22775 | 872 | 14.0 | 46151 | 0.00 | +2.6% | 2.4% |
+| sqlc | 2.8 ms | 4.3 ms | 7.3 ms | 23385 | 984 | 15.0 | 46388 | 0.00 | +2.5% | 10.1% * |
 | sqlboiler [1] | 2.9 ms | 4.5 ms | 7.3 ms | 21056 | 1923 | 36.0 | 51983 | 0.00 | +8.1% | 14.4% * |
 | beego | 2.8 ms | 4.3 ms | 8.9 ms | 20549 | 2884 | 50.0 | 50020 | 0.00 | +2.2% | 2.3% |
 | rel | 2.9 ms | 4.5 ms | 8.2 ms | 21295 | 3099 | 45.0 | 53674 | 0.00 | +8.2% | 20.0% * |
 | pop | 3.2 ms | 5.7 ms | 12 ms | 19717 | 5756 | 175.0 | 66623 | 0.00 | +35.1% | 21.1% * |
 | ent | 2.9 ms | 4.5 ms | 7.7 ms | 21508 | 4388 | 98.0 | 54644 | 0.00 | +7.0% | 35.7% * |
-| gorm [2] | 3.0 ms | 4.7 ms | 12 ms | 19543 | 6828 | 77.0 | 56729 | 0.00 | +13.4% | 19.0% * |
 | go-jet | 2.8 ms | 4.6 ms | 11 ms | 21347 | 3528 | 87.0 | 51073 | 0.00 | +8.8% | 19.6% * |
 | xorm | 2.8 ms | 4.5 ms | 7.8 ms | 21127 | 4660 | 94.0 | 56425 | 0.00 | +6.5% | 7.4% |
+| gorm [2] | 3.0 ms | 4.7 ms | 12 ms | 19543 | 6828 | 77.0 | 56729 | 0.00 | +13.4% | 19.0% * |
 | bun | 2.9 ms | 4.6 ms | 7.2 ms | 21625 | 6044 | 27.0 | 53325 | 0.00 | +9.2% | 15.5% * |
 | gorm/gen [3] | 2.9 ms | 4.5 ms | 7.2 ms | 21175 | 6796 | 77.0 | 56478 | 0.00 | +7.6% | 11.2% * |
 
@@ -197,16 +223,16 @@ Each table is one scenario under one load profile (a case); each row is one libr
 | pgx_pool | 3.0 ms | 4.7 ms | 7.6 ms | 22673 | 594 | 14.0 | 47102 | 0.00 | +6.8% | 33.2% * |
 | pgx | 3.0 ms | 4.8 ms | 8.4 ms | 20130 | 594 | 14.0 | 42884 | 0.00 | +8.3% | 10.6% * |
 | database/sql | 2.9 ms | 4.4 ms | 7.4 ms | 22276 | 928 | 15.9 | 47026 | 0.00 | baseline | 3.6% |
-| sqlc | 2.9 ms | 4.5 ms | 6.8 ms | 22271 | 1048 | 16.0 | 47150 | 0.00 | +2.8% | 20.7% * |
 | sqlx | 2.9 ms | 4.6 ms | 7.3 ms | 22070 | 928 | 15.9 | 46762 | 0.00 | +3.2% | 6.7% |
+| sqlc | 2.9 ms | 4.5 ms | 6.8 ms | 22271 | 1048 | 16.0 | 47150 | 0.00 | +2.8% | 20.7% * |
 | sqlboiler | 2.9 ms | 4.6 ms | 8.1 ms | 20371 | 1184 | 20.0 | 46801 | 0.00 | +4.6% | 9.1% |
 | beego | 2.9 ms | 4.6 ms | 9.2 ms | 20511 | 2040 | 31.9 | 43177 | 0.00 | +4.1% | 3.4% |
 | rel | 3.0 ms | 4.8 ms | 9.3 ms | 21395 | 2464 | 32.9 | 50030 | 0.00 | +8.8% | 18.4% * |
 | pop | 3.1 ms | 4.9 ms | 12 ms | 19607 | 5588 | 158.9 | 55776 | 0.00 | +10.9% | 18.2% * |
 | ent | 3.0 ms | 4.6 ms | 8.8 ms | 21154 | 4919 | 100.9 | 51147 | 0.00 | +3.8% | 4.8% |
-| gorm [1] | 3.2 ms | 5.3 ms | 12 ms | 18426 | 7856 | 79.9 | 52768 | 0.00 | +19.6% | 19.7% * |
 | go-jet | 3.0 ms | 4.8 ms | 10 ms | 20857 | 3943 | 99.9 | 51344 | 0.00 | +7.6% | 15.8% * |
 | xorm | 3.0 ms | 5.3 ms | 13 ms | 20013 | 5977 | 156.9 | 55711 | 0.00 | +19.4% | 8.5% |
+| gorm [1] | 3.2 ms | 5.3 ms | 12 ms | 18426 | 7856 | 79.9 | 52768 | 0.00 | +19.6% | 19.7% * |
 | bun | 3.3 ms | 5.3 ms | 9.9 ms | 21027 | 5960 | 19.0 | 49217 | 0.00 | +19.7% | 7.0% |
 | gorm/gen | 3.3 ms | 5.2 ms | 10 ms | 19520 | 15095 | 290.0 | 75603 | 0.00 | +17.2% | 2.6% |
 
@@ -219,16 +245,16 @@ Each table is one scenario under one load profile (a case); each row is one libr
 | pgx_pool | 2.8 ms | 4.4 ms | 7.6 ms | 23078 | 410 | 9.0 | 45873 | 0.00 | +3.6% | 36.9% * |
 | pgx | 2.8 ms | 4.4 ms | 7.3 ms | 21183 | 410 | 9.0 | 42650 | 0.00 | +3.7% | 10.6% * |
 | database/sql | 2.8 ms | 4.2 ms | 7.3 ms | 23240 | 472 | 11.0 | 45863 | 0.00 | baseline | 2.6% |
-| sqlc | 2.8 ms | 4.5 ms | 8.1 ms | 22718 | 480 | 11.0 | 47457 | 0.00 | +7.8% | 11.4% * |
 | sqlx | 2.8 ms | 4.3 ms | 7.3 ms | 23228 | 472 | 11.0 | 44738 | 0.00 | +2.2% | 7.6% |
+| sqlc | 2.8 ms | 4.5 ms | 8.1 ms | 22718 | 480 | 11.0 | 47457 | 0.00 | +7.8% | 11.4% * |
 | sqlboiler | 2.9 ms | 4.4 ms | 7.9 ms | 20858 | 600 | 13.0 | 44663 | 0.00 | +5.3% | 12.5% * |
 | beego | 2.8 ms | 4.3 ms | 8.1 ms | 21252 | 840 | 19.0 | 40827 | 0.00 | +3.4% | 3.9% |
 | rel | 2.9 ms | 4.6 ms | 8.8 ms | 22450 | 880 | 21.0 | 46716 | 0.00 | +10.1% | 14.7% * |
 | pop [1] | 2.8 ms | 4.4 ms | 9.5 ms | 22462 | 1088 | 32.0 | 46804 | 0.00 | +5.6% | 17.4% * |
 | ent | 3.0 ms | 4.5 ms | 9.6 ms | 20557 | 2120 | 44.0 | 47404 | 0.00 | +8.1% | 22.5% * |
-| gorm [2] | 2.8 ms | 4.4 ms | 10 ms | 20561 | 4176 | 49.0 | 48474 | 0.00 | +4.1% | 30.9% * |
 | go-jet | 2.8 ms | 4.5 ms | 9.6 ms | 22271 | 1552 | 36.0 | 46893 | 0.00 | +8.0% | 16.4% * |
 | xorm | 2.8 ms | 4.7 ms | 11 ms | 21470 | 3688 | 102.0 | 50894 | 0.00 | +11.4% | 10.1% * |
+| gorm [2] | 2.8 ms | 4.4 ms | 10 ms | 20561 | 4176 | 49.0 | 48474 | 0.00 | +4.1% | 30.9% * |
 | bun | 3.1 ms | 4.9 ms | 9.6 ms | 21722 | 5096 | 13.0 | 49399 | 0.00 | +15.5% | 5.7% |
 | gorm/gen | 2.8 ms | 4.4 ms | 9.1 ms | 21308 | 4480 | 52.0 | 49014 | 0.00 | +4.6% | 1.3% |
 
@@ -242,16 +268,16 @@ Each table is one scenario under one load profile (a case); each row is one libr
 | pgx_pool | 806 µs | 1.7 ms | 10 ms | 33883 | 1212 | 17.0 | 37637 | 0.00 | -2.1% | 18.3% * |
 | pgx | 801 µs | 1.6 ms | 5.0 ms | 33702 | 1260 | 18.0 | 38198 | 0.00 | -4.9% | 9.4% |
 | database/sql | 852 µs | 1.7 ms | 14 ms | 33432 | 1947 | 50.0 | 43870 | 0.00 | baseline | 4.2% |
-| sqlc | 829 µs | 1.7 ms | 200 ms | 32968 | 1971 | 51.0 | 43915 | 0.00 | +1.0% | 10.8% * |
 | sqlx | 839 µs | 1.7 ms | 5.5 ms | 33260 | 2347 | 55.0 | 45475 | 0.00 | -1.7% | 1.5% |
+| sqlc | 829 µs | 1.7 ms | 200 ms | 32968 | 1971 | 51.0 | 43915 | 0.00 | +1.0% | 10.8% * |
 | sqlboiler | 838 µs | 1.7 ms | 201 ms | 32708 | 2155 | 53.0 | 46577 | 0.00 | -0.9% | 8.8% |
 | beego | 862 µs | 1.7 ms | 4.7 ms | 33537 | 3322 | 102.9 | 45793 | 0.00 | +0.4% | 1.6% |
 | rel | 867 µs | 1.8 ms | 5.4 ms | 31960 | 3515 | 74.0 | 46643 | 0.00 | +3.9% | 6.0% |
 | pop | 904 µs | 1.9 ms | 201 ms | 31827 | 3765 | 87.0 | 52830 | 0.00 | +11.8% | 9.8% |
 | ent | 909 µs | 1.8 ms | 4.5 ms | 32890 | 5564 | 145.0 | 50707 | 0.00 | +7.3% | 0.4% |
-| gorm | 911 µs | 1.9 ms | 5.1 ms | 33152 | 5996 | 100.0 | 49941 | 0.00 | +12.7% | 7.4% |
 | go-jet | 934 µs | 1.9 ms | 201 ms | 30777 | 12006 | 221.0 | 59357 | 0.00 | +12.8% | 37.2% * |
 | xorm | 908 µs | 1.8 ms | 201 ms | 31931 | 7660 | 208.0 | 55753 | 0.00 | +6.8% | 5.0% |
+| gorm | 911 µs | 1.9 ms | 5.1 ms | 33152 | 5996 | 100.0 | 49941 | 0.00 | +12.7% | 7.4% |
 | bun | 2.4 ms | 4.7 ms | 204 ms | 11956 | 8236 | 79.5 | 112672 | 0.00 | +175.1% | 6.4% |
 | gorm/gen | 918 µs | 1.9 ms | 7.5 ms | 32495 | 6124 | 98.0 | 50143 | 0.00 | +10.8% | 7.0% |
 
@@ -262,16 +288,16 @@ Each table is one scenario under one load profile (a case); each row is one libr
 | pgx_pool | 908 µs | 2.0 ms | 201 ms | 29814 | 2880 | 63.5 | 39963 | 0.00 | -24.4% | 16.4% * |
 | pgx | 935 µs | 2.0 ms | 201 ms | 29789 | 8384 | 87.5 | 45384 | 0.00 | -23.8% | 6.3% |
 | database/sql | 1.2 ms | 2.7 ms | 201 ms | 26474 | 3557 | 183.7 | 88487 | 0.00 | baseline | 18.5% * |
-| sqlc | 1.2 ms | 2.7 ms | 201 ms | 25238 | 8015 | 193.0 | 93246 | 0.00 | +1.0% | 4.8% |
 | sqlx | 1.3 ms | 2.8 ms | 201 ms | 25352 | 9107 | 206.7 | 95404 | 0.00 | +2.9% | 22.8% * |
+| sqlc | 1.2 ms | 2.7 ms | 201 ms | 25238 | 8015 | 193.0 | 93246 | 0.00 | +1.0% | 4.8% |
 | sqlboiler | 1.4 ms | 3.0 ms | 201 ms | 24134 | 14204 | 259.1 | 105871 | 0.00 | +11.0% | 10.9% * |
 | beego [1] | 1.1 ms | 2.5 ms | 201 ms | 26874 | 11998 | 533.4 | 72683 | 0.00 | -8.2% | 1.1% |
 | rel | 1.1 ms | 2.4 ms | 201 ms | 27207 | 20039 | 352.6 | 70555 | 0.00 | -10.8% | 3.8% |
 | pop | 1.4 ms | 3.0 ms | 201 ms | 24454 | 13462 | 293.7 | 109774 | 0.00 | +12.5% | 5.3% |
 | ent [2] | 1.9 ms | 3.6 ms | 203 ms | 15622 | 13820 | 345.9 | 107072 | 0.00 | +34.7% | 15.0% * |
-| gorm | 1.5 ms | 3.3 ms | 201 ms | 23145 | 17288 | 406.2 | 117755 | 0.00 | +22.0% | 4.8% |
 | go-jet | 1.3 ms | 2.9 ms | 201 ms | 24477 | 37356 | 691.1 | 100183 | 0.00 | +6.8% | 15.3% * |
 | xorm | 1.2 ms | 2.6 ms | 201 ms | 25669 | 23576 | 609.7 | 85288 | 0.00 | -2.8% | 2.1% |
+| gorm | 1.5 ms | 3.3 ms | 201 ms | 23145 | 17288 | 406.2 | 117755 | 0.00 | +22.0% | 4.8% |
 | bun | 2.1 ms | 5.0 ms | 203 ms | 14626 | 13152 | 210.8 | 101637 | 0.00 | +86.7% | 7.1% |
 | gorm/gen | 1.4 ms | 3.2 ms | 201 ms | 23300 | 22771 | 484.8 | 120504 | 0.00 | +20.8% | 11.0% * |
 
@@ -285,27 +311,27 @@ Each table is one scenario under one load profile (a case); each row is one libr
 | pgx_pool | 1.6 ms | 4.9 ms | 201 ms | 21550 | 4641 | 171.0 | 37099 | 0.00 | +0.8% | 23.4% * |
 | pgx | 1.7 ms | 5.1 ms | 202 ms | 21157 | 14657 | 257.0 | 46411 | 0.00 | +3.1% | 5.7% |
 | database/sql | 1.8 ms | 4.9 ms | 202 ms | 20775 | 5261 | 269.2 | 53366 | 0.00 | baseline | 9.8% |
-| sqlc | 1.7 ms | 5.2 ms | 202 ms | 20334 | 14674 | 315.2 | 58495 | 0.00 | +6.3% | 10.4% * |
 | sqlx | 1.7 ms | 4.9 ms | 202 ms | 20153 | 15854 | 358.2 | 63010 | 0.00 | +0.8% | 1.7% |
+| sqlc | 1.7 ms | 5.2 ms | 202 ms | 20334 | 14674 | 315.2 | 58495 | 0.00 | +6.3% | 10.4% * |
 | sqlboiler [1] | n/a (unsupported) | - | - | - | - | - | - | - | - | - |
 | beego [2] | n/a (unsupported) | - | - | - | - | - | - | - | - | - |
 | rel [3] | n/a (unsupported) | - | - | - | - | - | - | - | - | - |
 | pop [4] | n/a (unsupported) | - | - | - | - | - | - | - | - | - |
 | ent [5] | n/a (unsupported) | - | - | - | - | - | - | - | - | - |
-| gorm [6] | n/a (unsupported) | - | - | - | - | - | - | - | - | - |
 | go-jet | 2.0 ms | 5.9 ms | 202 ms | 18303 | 48745 | 793.2 | 103352 | 0.00 | +20.4% | 8.0% |
-| xorm [7] | 1.9 ms | 5.3 ms | 202 ms | 19137 | 39475 | 1009.2 | 86170 | 0.00 | +7.7% | 22.2% * |
+| xorm [6] | 1.9 ms | 5.3 ms | 202 ms | 19137 | 39475 | 1009.2 | 86170 | 0.00 | +7.7% | 22.2% * |
+| gorm [7] | n/a (unsupported) | - | - | - | - | - | - | - | - | - |
 | bun | 1.8 ms | 5.1 ms | 202 ms | 19410 | 20345 | 336.3 | 73582 | 0.00 | +3.7% | 13.0% * |
 | gorm/gen [8] | n/a (unsupported) | - | - | - | - | - | - | - | - | - |
 
-1. n/a: sqlboiler's query mods cannot express UNION without raw SQL. The case is not ranked.
-2. n/a: beego's query API cannot express UNION without raw SQL. The case is not ranked.
-3. n/a: rel's query API cannot express UNION without raw SQL. The case is not ranked.
-4. n/a: pop's query API cannot express UNION without RawQuery. The case is not ranked.
-5. n/a: ent's query API cannot express UNION, and using raw SQL would not measure ent. The case is not ranked.
-6. n/a: gorm's query API cannot express UNION without raw SQL. The case is not ranked.
-7. xorm UNION is xorm.io/builder's Union (the query builder xorm itself uses) passed to SQL, so it is measured, not n/a.
-8. n/a: gorm/gen's query API cannot express UNION without raw SQL. The case is not ranked.
+1. n/a: sqlboiler's query mods cannot express UNION without raw SQL.
+2. n/a: beego's query API cannot express UNION without raw SQL.
+3. n/a: rel's query API cannot express UNION without raw SQL.
+4. n/a: pop's query API cannot express UNION without RawQuery.
+5. n/a: ent's query API cannot express UNION, and using raw SQL would not measure ent.
+6. xorm UNION is xorm.io/builder's Union (the query builder xorm itself uses) passed to SQL, so it is measured, not n/a.
+7. n/a: gorm's query API cannot express UNION without raw SQL.
+8. n/a: gorm/gen's query API cannot express UNION without raw SQL.
 
 ## Pros and cons
 
@@ -344,18 +370,6 @@ Each table is one scenario under one load profile (a case); each row is one libr
 
 - Hand-written SQL strings and row scanning, with no compile-time check of either.
 
-### sqlc
-
-**Pros**
-
-- Queries are checked against the schema when the code is generated, and the generated code is typed.
-- Plain SQL, so every scenario including UNION is expressible.
-
-**Cons**
-
-- Needs a generation step (make gen-sqlc) and committed generated code.
-- Each query lives in an SQL file; there is no runtime query builder.
-
 ### sqlx
 
 **Pros**
@@ -367,6 +381,18 @@ Each table is one scenario under one load profile (a case); each row is one libr
 
 - No updates since 2024.
 - Scanning into structs is reflection-based.
+
+### sqlc
+
+**Pros**
+
+- Queries are checked against the schema when the code is generated, and the generated code is typed.
+- Plain SQL, so every scenario including UNION is expressible.
+
+**Cons**
+
+- Needs a generation step (make gen-sqlc) and committed generated code.
+- Each query lives in an SQL file; there is no runtime query builder.
 
 ### sqlboiler
 
@@ -431,17 +457,6 @@ Each table is one scenario under one load profile (a case); each row is one libr
 - UNION is not expressible without raw SQL, so that case is n/a.
 - Needs a generation step (make gen-ent) and a large amount of committed generated code.
 
-### gorm
-
-**Pros**
-
-- Query API covers INSERT, UPDATE, DELETE, SELECT and JOIN (Joins with a relation produces one SQL JOIN).
-
-**Cons**
-
-- UNION is not expressible without raw SQL, so that case is n/a.
-- Defaults need care to benchmark fairly: every write is wrapped in a transaction unless SkipDefaultTransaction is set, and Save or Updates(struct) misreport or skip zero values and missing rows unless guarded.
-
 ### go-jet
 
 **Pros**
@@ -465,6 +480,17 @@ Each table is one scenario under one load profile (a case); each row is one libr
 - The default SnakeMapper maps the field ID to the column i_d; the adapter needs GonicMapper.
 - Update(struct) skips zero values (a false Right) unless the columns are named, and Get reports a missing row as found=false, not as an error.
 - Conditions, join clauses and the select list are strings checked at run time.
+
+### gorm
+
+**Pros**
+
+- Query API covers INSERT, UPDATE, DELETE, SELECT and JOIN (Joins with a relation produces one SQL JOIN).
+
+**Cons**
+
+- UNION is not expressible without raw SQL, so that case is n/a.
+- Defaults need care to benchmark fairly: every write is wrapped in a transaction unless SkipDefaultTransaction is set, and Save or Updates(struct) misreport or skip zero values and missing rows unless guarded.
 
 ### bun
 

@@ -4,7 +4,7 @@
 
 Run started 2026-10-24T04:41:14Z (UTC). Numbers are only comparable on the same machine.
 
-Compares 15 libraries on three measures: **latency** (p95, the time within which 95% of calls finished), **memory** (B/op, bytes allocated per operation) and **CPU** (CPU ns/op, CPU time per operation). Each library runs 6 scenarios under 2 load profiles; a **case** is one scenario under one load profile, written scenario/profile, for example join/low.
+Compares 15 libraries on three measures: **latency** (p95, the time within which 95% of calls finished), **memory** (B/op, bytes allocated per operation) and **CPU** (CPU ns/op, CPU time per operation). Each library runs 6 scenarios under 2 load profiles; a **case** is one scenario under one load profile, written scenario/profile, for example join/low. Union is measured but not scored (see Union below); the other 5 scenarios, 10 cases, make up every score.
 
 This is the summary. The per-case tables, pros and cons, and the qualitative sections (flexibility, ease of use, learning curve, community and a separate qualitative ranking) are in the [detailed report](REPORT.md).
 
@@ -20,11 +20,11 @@ Each number is compared with plain `database/sql`, Go's built-in way to talk to 
 
 So "p95 1.04x, B/op 1.43x, CPU ns/op 1.03x" reads: this library's calls take 4% longer, use 43% more memory and use 3% more processor time than `database/sql`.
 
-A library's **score** combines its three ratios over every case into one number (see the [glossary](#glossary) for how). `1.00` is the same as `database/sql`, `2.00` is twice as costly, `0.50` half. Lower is better. Other terms, such as scenario, load profile and ORM, are in the [glossary](#glossary).
+A library's **score** combines its three ratios over every scored case into one number (see the [glossary](#glossary) for how). `1.00` is the same as `database/sql`, `2.00` is twice as costly, `0.50` half. Lower is better. Other terms, such as scenario, load profile and ORM, are in the [glossary](#glossary).
 
 ## Top 5
 
-Score is the weighted geometric mean, over every ranked case, of each metric's ratio to database/sql (p95 1, B/op 1, CPU ns/op 1). 1.00 means the same as database/sql, 2.00 twice as much, 0.50 half; lower is better. A case needs a measured database/sql result to be scored.
+Score is the weighted geometric mean, over every ranked case, of each metric's ratio to database/sql (p95 1, B/op 1, CPU ns/op 1). 1.00 means the same as database/sql, 2.00 twice as much, 0.50 half; lower is better. Union is not scored, and a case needs a measured database/sql result to be scored.
 
 Libraries with equal scores share a rank.
 
@@ -32,48 +32,46 @@ Only libraries that are not tied to one database are ranked; the others are unde
 
 | Rank | Library | Score | Ranked cases |
 |---:|---|---:|---:|
-| 1 | database/sql | 1.00 | 12/12 |
-| 2 | sqlc | 1.15 | 12/12 |
-| 3 | sqlx | 1.16 | 12/12 |
-| 4 | sqlboiler | 1.25 | 10/12 |
-| 5 | beego | 1.31 | 10/12 |
+| 1 | database/sql | 1.00 | 10/10 |
+| 2 | sqlx | 1.09 | 10/10 |
+| 3 | sqlc | 1.10 | 10/10 |
+| 4 | sqlboiler | 1.25 | 10/10 |
+| 5 | beego | 1.31 | 10/10 |
 
 **database/sql**
 
 - the baseline: every ratio is 1.00 by definition
 
-**sqlc**
-
-- ratio to database/sql (geometric mean over ranked cases, 1.00 = same, lower is better): p95 1.04x, B/op 1.43x, CPU ns/op 1.03x
-- slowest case: update/low (p95 1.35x database/sql)
-
 **sqlx**
 
-- ratio to database/sql (geometric mean over ranked cases, 1.00 = same, lower is better): p95 1.01x, B/op 1.44x, CPU ns/op 1.05x
+- ratio to database/sql (geometric mean over ranked cases, 1.00 = same, lower is better): p95 1.01x, B/op 1.25x, CPU ns/op 1.03x
 - slowest case: delete/low (p95 1.20x database/sql)
+
+**sqlc**
+
+- ratio to database/sql (geometric mean over ranked cases, 1.00 = same, lower is better): p95 1.04x, B/op 1.25x, CPU ns/op 1.01x
+- slowest case: update/low (p95 1.35x database/sql)
 
 **sqlboiler**
 
 - ratio to database/sql (geometric mean over ranked cases, 1.00 = same, lower is better): p95 1.03x, B/op 1.74x, CPU ns/op 1.09x
 - slowest case: join/low (p95 1.17x database/sql)
-- judged on 10 of 12 cases
 
 **beego**
 
 - ratio to database/sql (geometric mean over ranked cases, 1.00 = same, lower is better): p95 0.98x, B/op 2.36x, CPU ns/op 0.97x
 - slowest case: join/low (p95 1.18x database/sql)
-- judged on 10 of 12 cases
 
 Also measured:
 
-- rel: score 1.49, ranked cases 10/12
-- pop: score 1.73, ranked cases 10/12
-- ent: score 1.79, ranked cases 10/12
-- gorm: score 2.02, ranked cases 10/12
-- go-jet: score 2.05, ranked cases 12/12
-- xorm: score 2.06, ranked cases 12/12
-- bun: score 2.10, ranked cases 12/12
-- gorm/gen: score 2.25, ranked cases 10/12
+- rel: score 1.49, ranked cases 10/10
+- pop: score 1.73, ranked cases 10/10
+- ent: score 1.79, ranked cases 10/10
+- go-jet: score 1.91, ranked cases 10/10
+- xorm: score 1.99, ranked cases 10/10
+- gorm: score 2.02, ranked cases 10/10
+- bun: score 2.16, ranked cases 10/10
+- gorm/gen: score 2.25, ranked cases 10/10
 
 ## Honorable mention
 
@@ -81,8 +79,51 @@ Measured and shown in every table of the detailed report, but kept out of the ra
 
 | Library | Score | Ranked cases | Why not ranked |
 |---|---:|---:|---|
-| pgx_pool | 0.85 | 12/12 | pgx is a PostgreSQL-only driver API, so code written against it cannot move to another database. |
-| pgx | 0.98 | 12/12 | pgx is a PostgreSQL-only driver API, so code written against it cannot move to another database. |
+| pgx_pool | 0.85 | 10/10 | pgx is a PostgreSQL-only driver API, so code written against it cannot move to another database. |
+| pgx | 0.91 | 10/10 | pgx is a PostgreSQL-only driver API, so code written against it cannot move to another database. |
+
+## Feature matrix
+
+Which scenarios each library expresses with its own query API. `n/a` means it needs hand-written SQL for that scenario.
+
+| Library | insert | update | delete | select | join | union |
+|---|---|---|---|---|---|---|
+| pgx_pool | native | native | native | native | native | native |
+| pgx | native | native | native | native | native | native |
+| database/sql | native | native | native | native | native | native |
+| sqlx | native | native | native | native | native | native |
+| sqlc | native | native | native | native | native | native |
+| sqlboiler | native | native | native | native | native | n/a |
+| beego | native | native | native | native | native [1] | n/a |
+| rel | native | native | native | native | native | n/a |
+| pop | native | native | native | native | native | n/a |
+| ent | native | native | native | native | native [2] | n/a |
+| go-jet | native | native | native | native | native | native |
+| xorm | native | native | native | native | native | native [3] |
+| gorm | native | native | native | native | native | n/a |
+| bun | native | native | native | native | native | native |
+| gorm/gen | native | native | native | native | native | n/a |
+
+1. beego JOIN is RelatedSel on a foreign-key field (one SQL statement, customer loaded with the order).
+2. ent JOIN is edge eager-loading (WithCustomer): two queries, orders then their customers, not one SQL JOIN. Read its JOIN numbers with that in mind.
+3. xorm UNION is xorm.io/builder's Union (the query builder xorm itself uses) passed to SQL, so it is measured, not n/a.
+
+## Union
+
+UNION is measured for every library that can express it natively but is not part of any score above. This ranking uses the same ratio to database/sql, over the union cases only (every load profile).
+
+| Rank | Library | Score | Ranked cases | p95 | B/op | CPU ns/op |
+|---:|---|---:|---:|---:|---:|---:|
+| 1 | database/sql | 1.00 | 2/2 | 1.00x | 1.00x | 1.00x |
+| 2 | sqlc | 1.48 | 2/2 | 1.05x | 2.76x | 1.12x |
+| 3 | sqlx | 1.55 | 2/2 | 1.05x | 2.99x | 1.20x |
+| 4 | bun | 1.84 | 2/2 | 1.18x | 3.83x | 1.37x |
+| 5 | xorm | 2.48 | 2/2 | 1.23x | 7.43x | 1.68x |
+| 6 | go-jet | 2.94 | 2/2 | 1.42x | 9.17x | 1.95x |
+| - | pgx_pool | 0.87 | 2/2 | 1.03x | 0.87x | 0.73x |
+| - | pgx | 1.42 | 2/2 | 1.22x | 2.76x | 0.86x |
+
+No ranked union result: beego, ent, gorm, gorm/gen, pop, rel, sqlboiler.
 
 ## Run it yourself
 
@@ -165,16 +206,16 @@ before and after. Do not change any level in report/rubric.json unless I ask; th
 | pgx_pool | v5.11.0 | - | v5.11.0 |
 | pgx | v5.11.0 | - | v5.11.0 |
 | database/sql | - | - | standard library |
-| sqlc | - | - | generator v1.31.1, pinned in tools/go.mod |
 | sqlx | v1.4.0 | no updates since 2024 | v1.4.0 |
+| sqlc | - | - | generator v1.31.1, pinned in tools/go.mod |
 | sqlboiler | v4.19.7 | - | v4.19.7 |
 | beego | v2.3.10 | - | v2.3.10 |
 | rel | v0.43.0 | - | v0.43.0 |
 | pop | v6.4.1 | - | v6.4.1 |
 | ent | v0.14.6 | - | v0.14.6 |
-| gorm | v1.31.2 | - | v1.31.2 |
 | go-jet | v2.16.1 | - | v2.16.1 |
 | xorm | v1.4.3 | - | v1.4.3 |
+| gorm | v1.31.2 | - | v1.31.2 |
 | bun | v1.3.0 | - | v1.3.0 |
 | gorm/gen | v0.3.29 | - | v0.3.29 |
 
@@ -192,15 +233,15 @@ Repeats per case: 3 (the median is reported). Seed: 1792816868404869000.
 - Every database/sql-based library uses the same pgx/stdlib driver (pgx), never lib/pq.
 - pgx and pgx_pool bypass database/sql and use pgxpool with the pool sized like every other adapter. pgx collects rows into structs with its CollectRows/RowToStructByName helpers; pgx_pool scans into locals like the database/sql reference, so it shows the driver floor. Both use pgx's default statement cache, never an explicit Prepare.
 - The ranking and the Top 5 cover database-agnostic libraries. pgx and pgx_pool are PostgreSQL-only, so they are honorable mentions: they are measured and shown in every table, but they take no rank from the other libraries, and their score is computed as if they had joined the ranking.
-- A case is one scenario (insert, update, delete, select, join or union) under one load profile (low or stress), written scenario/profile, for example join/low. Every library is run through the same cases. Each case is measured several times and the median is what is reported and ranked, on three measures: latency (p95), memory (B/op, bytes allocated per operation) and CPU (CPU ns/op). A case the library cannot express is n/a and left out of the ranking.
+- A case is one scenario (insert, update, delete, select, join or union) under one load profile (low or stress), written scenario/profile, for example join/low. Every library is run through the same cases. Each case is measured several times and the median is what is reported and ranked, on three measures: latency (p95), memory (B/op, bytes allocated per operation) and CPU (CPU ns/op). A case the library cannot express is n/a. Union is measured and reported on its own but is not part of the score, because some libraries cannot express it without hand-written SQL (see the feature matrix) and a score over different cases would not be comparable.
 - pop cannot take an existing *sql.DB, so it opens its own pool through its PostgreSQL dialect, which uses the same pgx stdlib driver; the pool is sized like every other adapter.
 - Numbers are only comparable on the machine and run they were measured on; the host is listed above.
 - Each case is the median of the repeats listed in the run configuration. Before the matrix runs, every adapter is checked against the database/sql reference on returned values, and every read scans every selected column.
 - Latency is the per-call service time of successful operations with exact nearest-rank percentiles; it is not corrected for coordinated omission.
 - B/op, allocs/op and CPU ns/op are deltas over the measured window divided by ops and include harness and GC cost.
 - B/op and allocs/op also include each library's idiomatic result handling: sqlx, sqlc, gorm, ent and jet materialise rows, while the database/sql reference scans into locals, so part of the difference is the cost of that handling.
-- A scenario counts as supported only when the library's own query API (or, for the SQL-first sqlc and sqlx, its SQL) expresses it; needing the raw-SQL escape hatch makes the case n/a and it is not ranked.
-- A library's score is the weighted geometric mean, over its ranked cases, of each metric divided by database/sql's value in the same case: 1.00 is the same as database/sql, 2.00 twice as much, 0.50 half, and lower is better. A ratio keeps the size of a difference, so a 1% gap moves the score by about 1% instead of a whole place, and a library's score does not depend on which other libraries were run. A library with n/a or excluded cases is judged on fewer, possibly easier, scenarios; the Ranked cases column shows how many.
+- A scenario counts as supported only when the library's own query API (or, for the SQL-first sqlc and sqlx, its SQL) expresses it; needing the raw-SQL escape hatch makes the case n/a.
+- A library's score is the weighted geometric mean, over its ranked cases, of each metric divided by database/sql's value in the same case: 1.00 is the same as database/sql, 2.00 twice as much, 0.50 half, and lower is better. A ratio keeps the size of a difference, so a 1% gap moves the score by about 1% instead of a whole place, and a library's score does not depend on which other libraries were run. The scored cases are insert, update, delete, select and join under both load profiles, the same for every library; a library with error-excluded cases is judged on fewer, and the Ranked cases column shows how many.
 - Ease of use and learning curve are the author's judgement from writing and reviewing these adapters and reading each library's documentation, not measurements, and they are not ranked. Community facts (stars, last release, last commit, open issues) were read from the forge APIs on the date shown in that section; a release date is the date the latest release was published, or the tag commit date where the notes say so.
 - Stress-profile p99 on macOS includes a constant 100-200 ms host-to-VM stall (Postgres runs in an OrbStack VM) and is not a property of the library.
 - Run-to-run stability (two full 15-library runs on this machine, 2026-10-24; the earlier 6-library pair had 62 of 72 cases within 20%, all 10 beyond at the low profile, and all 36 stress cases within 8.7%): p95 differed by 20% or less in 130 of 166 cases. The other 36 are 35 low-profile cases, which reached up to 114% (pgx select), and one stress case (pop insert, 27%); the remaining 82 stress cases stayed under 18%. The top 5 had the same libraries in the same order in both runs, and the five scores moved by 0.05 or less (beego most, 1.31 to 1.36), but sqlc and sqlx are 0.01 apart in both runs, so their order is within noise. The cause is environmental (loaded macOS host, host-VM network crossing, WAL fsync on the VM disk).
@@ -239,7 +280,7 @@ Plain-language meanings of the terms used in this report. `REPORT.md` uses the s
 - **delete**: remove one row.
 - **select**: read one row by its id.
 - **join**: read the orders of one customer together with that customer's details, which live in two tables (10 rows).
-- **union**: combine two lists, the customers and the suppliers of one city, into one result (40 rows).
+- **union**: combine two lists, the customers and the suppliers of one city, into one result (40 rows). It is reported separately and is not part of the score, because some libraries cannot express it without hand-written SQL.
 - **load profile**: how hard the database is pushed. **low** is a quiet application: 4 callers, each pausing 10 ms between calls. **stress** is a busy one: 100 callers hitting the database without pausing.
 - **low**: the quiet load profile (4 workers, 10 ms between calls).
 - **stress**: the busy load profile (100 workers, no pauses).
