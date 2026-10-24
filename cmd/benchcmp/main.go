@@ -65,7 +65,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 		}
 	}
 
-	topA, topB := report.TopLibraries(a, rb.Weights), report.TopLibraries(b, rb.Weights)
+	topA, topB := report.TopLibraries(a, rb), report.TopLibraries(b, rb)
 	switch {
 	case len(topA) == 0 && len(topB) == 0: // an empty ranking proves nothing about stability
 		fmt.Fprintln(stdout, "NO RANKED LIBRARIES in either run")

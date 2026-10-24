@@ -11,8 +11,11 @@ import (
 	"github.com/restuu/go-sql-benchmark/internal/result"
 )
 
-// writeRun writes a run with one "select"/"low" cell per library; libraries[i] gets p95 = p95 * (i+1)
-// (p95 alone when no library is named, using "database_sql").
+const baseline = "database_sql"
+
+// writeRun writes a run with one "select"/"low" cell per library; libraries[i] gets p95, B/op and CPU
+// ns/op scaled by (i+1), so the first library should be the database_sql baseline that ratios are
+// taken against (a lone database_sql with p95 when no library is named).
 func writeRun(t *testing.T, dir, name string, p95 int64, libraries ...string) string {
 	t.Helper()
 	if len(libraries) == 0 {
@@ -20,7 +23,8 @@ func writeRun(t *testing.T, dir, name string, p95 int64, libraries ...string) st
 	}
 	var cells []result.Cell
 	for i, lib := range libraries {
-		m := result.Metrics{Ops: 10, ThroughputOpsPerSec: 1, LatencyP50Ns: p95 / 2, LatencyP95Ns: p95 * int64(i+1), LatencyP99Ns: p95 * int64(i+1), ElapsedSeconds: 1}
+		m := result.Metrics{Ops: 10, ThroughputOpsPerSec: 1, LatencyP50Ns: p95 / 2, LatencyP95Ns: p95 * int64(i+1), LatencyP99Ns: p95 * int64(i+1),
+			BytesPerOp: float64(100 * (i + 1)), CPUNsPerOp: float64(1000 * (i + 1)), ElapsedSeconds: 1}
 		cells = append(cells, result.Cell{Library: lib, Scenario: "select", Profile: "low", Status: result.StatusOK, Repeats: []result.Metrics{m}, Median: &m})
 	}
 	run := result.Run{
@@ -100,10 +104,10 @@ func TestRun(t *testing.T) {
 func TestRunTopFive(t *testing.T) {
 	dir := t.TempDir()
 	rubric := writeRubric(t, dir)
-	seven := []string{"a", "b", "c", "d", "e", "f", "g"}
-	reorderedTail := []string{"a", "b", "c", "d", "e", "g", "f"} // only ranks 6 and 7 swap
-	swappedTop := []string{"b", "a", "c", "d", "e", "f", "g"}    // ranks 1 and 2 swap
-	newTop := []string{"a", "b", "c", "d", "f", "e", "g"}        // rank 5 changes
+	seven := []string{baseline, "a", "b", "c", "d", "e", "f"}
+	reorderedTail := []string{baseline, "a", "b", "c", "d", "f", "e"} // only ranks 6 and 7 swap
+	swappedTop := []string{baseline, "b", "a", "c", "d", "e", "f"}    // ranks 2 and 3 swap
+	newTop := []string{baseline, "a", "b", "c", "e", "d", "f"}        // rank 5 changes
 	tests := []struct {
 		name     string
 		other    []string

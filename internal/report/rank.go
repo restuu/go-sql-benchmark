@@ -77,36 +77,42 @@ func isExcluded(c result.Cell) bool {
 	return c.Status == result.StatusOK && !isRanked(c)
 }
 
-// cellRank is a library's rank per metric in one (scenario, profile).
-type cellRank struct {
+// cellRatio is a library's cost in one (scenario, profile) relative to the baseline: each metric
+// divided by database/sql's value in the same case. 1 is the same, 2 is twice as much, 0.5 half.
+type cellRatio struct {
 	scenario, profile string
-	ranks             [metricCount]int
-	of                int // libraries ranked in this cell
+	ratios            [metricCount]float64
 }
 
 // libScore is a library's overall standing; a lower score is better.
 type libScore struct {
 	library       string
+	guest         bool    // honorable mention: scored like the others but kept out of the Top 5
 	score         float64 // +Inf when no cell was ranked
 	ranked, total int     // ranked cells out of cells present
-	meanRank      [metricCount]float64
-	cells         []cellRank
+	meanRatio     [metricCount]float64
+	cells         []cellRatio
 }
 
 type ranking struct{ libs []libScore }
 
-// rankCells ranks every library on p95, B/op and CPU ns/op in each (scenario, profile). Cells are
-// visited in a fixed order so the floating-point sums do not depend on the order of run.Cells.
-func rankCells(run result.Run, w Weights) ranking {
+// rankCells scores every library on p95, B/op and CPU ns/op as the ratio to the baseline in each
+// (scenario, profile), combined by a weighted geometric mean. A ratio keeps the size of a
+// difference (1% slower is 1.01, not one place lower), and the score of a library does not depend
+// on which other libraries are in the run. Cells are visited in a fixed order so the
+// floating-point sums do not depend on the order of run.Cells. Libraries in guests are honorable
+// mentions: scored the same way but left out of top and rest.
+func rankCells(run result.Run, w Weights, guests map[string]bool) ranking {
 	idx := indexCells(run)
 	names := libraryNames(run)
 	scores := make([]libScore, len(names))
 	for i, n := range names {
 		scores[i].library = n
+		scores[i].guest = guests[n]
 	}
 	for _, p := range run.Config.Profiles {
 		for _, s := range bench.AllScenarios {
-			rankOneCell(idx, scores, string(s), p.Name)
+			scoreOneCell(idx, scores, string(s), p.Name)
 		}
 	}
 	weights := w.perMetric()
@@ -119,34 +125,43 @@ func rankCells(run result.Run, w Weights) ranking {
 	return ranking{libs: scores}
 }
 
-// rankOneCell appends this (scenario, profile)'s ranks to each ranked library.
-func rankOneCell(idx cellIndex, scores []libScore, scenario, profile string) {
-	var inCell []int // indexes into scores of the ranked libraries
+// scoreOneCell appends this (scenario, profile)'s ratios to each library that has a ranked cell
+// there. Without a ranked baseline cell the case cannot be scored for anyone, and a library whose
+// cell has a non-positive metric (or whose baseline has) has no ratio for it.
+func scoreOneCell(idx cellIndex, scores []libScore, scenario, profile string) {
+	var base *result.Metrics
+	if b, ok := idx[cellID{baselineLibrary, scenario, profile}]; ok && isRanked(b) {
+		base = b.Median
+	}
 	for i := range scores {
 		c, ok := idx[cellID{scores[i].library, scenario, profile}]
 		if !ok {
 			continue
 		}
 		scores[i].total++
-		if isRanked(c) {
-			inCell = append(inCell, i)
+		if base == nil || !isRanked(c) {
+			continue
 		}
-	}
-	for _, i := range inCell {
-		cr := cellRank{scenario: scenario, profile: profile, of: len(inCell)}
-		own := idx[cellID{scores[i].library, scenario, profile}].Median
-		for m := range metricCount {
-			cr.ranks[m] = 1
-			for _, j := range inCell {
-				other := idx[cellID{scores[j].library, scenario, profile}].Median
-				if m.value(*other) < m.value(*own) {
-					cr.ranks[m]++
-				}
-			}
+		ratios, ok := ratiosTo(*base, *c.Median)
+		if !ok {
+			continue
 		}
-		scores[i].cells = append(scores[i].cells, cr)
+		scores[i].cells = append(scores[i].cells, cellRatio{scenario: scenario, profile: profile, ratios: ratios})
 		scores[i].ranked++
 	}
+}
+
+// ratiosTo divides each metric of m by the baseline's; it reports false when a value is not positive.
+func ratiosTo(base, m result.Metrics) ([metricCount]float64, bool) {
+	var ratios [metricCount]float64
+	for k := range metricCount {
+		b, v := k.value(base), k.value(m)
+		if !(b > 0 && v > 0) {
+			return ratios, false
+		}
+		ratios[k] = v / b
+	}
+	return ratios, true
 }
 
 func (s *libScore) finish(weights [metricCount]float64) {
@@ -155,18 +170,18 @@ func (s *libScore) finish(weights [metricCount]float64) {
 		return
 	}
 	var weighted, weightSum float64
-	var sums [metricCount]float64
+	var logSums [metricCount]float64
 	for _, c := range s.cells {
 		for m := range metricCount {
-			r := float64(c.ranks[m])
-			weighted += weights[m] * r
+			l := math.Log(c.ratios[m])
+			weighted += weights[m] * l
 			weightSum += weights[m]
-			sums[m] += r
+			logSums[m] += l
 		}
 	}
-	s.score = weighted / weightSum
+	s.score = math.Exp(weighted / weightSum)
 	for m := range metricCount {
-		s.meanRank[m] = sums[m] / float64(len(s.cells))
+		s.meanRatio[m] = math.Exp(logSums[m] / float64(len(s.cells)))
 	}
 }
 
@@ -179,13 +194,25 @@ func (r ranking) lookup(name string) (libScore, bool) {
 	return libScore{}, false
 }
 
-// ranked returns the libraries with at least one ranked cell, best first.
+// pool returns the libraries that take part in the ranking (everything but the honorable
+// mentions), best first.
+func (r ranking) pool() []libScore {
+	return slices.DeleteFunc(slices.Clone(r.libs), func(l libScore) bool { return l.guest })
+}
+
+// mentions returns the honorable mentions, best score first.
+func (r ranking) mentions() []libScore {
+	return slices.DeleteFunc(slices.Clone(r.libs), func(l libScore) bool { return !l.guest })
+}
+
+// ranked returns the pool libraries with at least one ranked cell, best first.
 func (r ranking) ranked() []libScore {
+	p := r.pool()
 	n := 0
-	for n < len(r.libs) && !math.IsInf(r.libs[n].score, 1) {
+	for n < len(p) && !math.IsInf(p[n].score, 1) {
 		n++
 	}
-	return r.libs[:n]
+	return p[:n]
 }
 
 // top returns up to n best libraries that were ranked at all.
@@ -204,13 +231,13 @@ func competitionRanks(libs []libScore) []int {
 	return ranks
 }
 
-// rest returns every library not in top(n), including unranked ones.
-func (r ranking) rest(n int) []libScore { return r.libs[len(r.top(n)):] }
+// rest returns every pool library not in top(n), including unranked ones.
+func (r ranking) rest(n int) []libScore { return r.pool()[len(r.top(n)):] }
 
 // TopLibraries returns the names of the top-ranked libraries of a run, best first, using the
-// same ranking as the report.
-func TopLibraries(run result.Run, w Weights) []string {
-	top := rankCells(run, w).top(topCount)
+// same ranking as the report; honorable mentions are left out.
+func TopLibraries(run result.Run, rb Rubric) []string {
+	top := rankCells(run, rb.Weights, rb.honorableMentions()).top(topCount)
 	names := make([]string, len(top))
 	for i, l := range top {
 		names[i] = l.library

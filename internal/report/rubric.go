@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/restuu/go-sql-benchmark/internal/bench"
@@ -21,17 +22,20 @@ type Weights struct {
 
 // LibraryInfo is the hand-written description of one library.
 type LibraryInfo struct {
-	Name          string        `json:"name"`
-	Display       string        `json:"display"`
-	Module        string        `json:"module"`
-	Label         string        `json:"label"`
-	VersionUsed   string        `json:"version_used"`
-	Pros          []string      `json:"pros"`
-	Cons          []string      `json:"cons"`
-	Flexibility   Flexibility   `json:"flexibility"`
-	EaseOfUse     EaseOfUse     `json:"ease_of_use"`
-	LearningCurve LearningCurve `json:"learning_curve"`
-	Community     Community     `json:"community"`
+	Name        string `json:"name"`
+	Display     string `json:"display"`
+	Module      string `json:"module"`
+	Label       string `json:"label"`
+	VersionUsed string `json:"version_used"`
+	// HonorableMention, when set, is the reason this library is measured and shown but not ranked
+	// against the others (for example a driver locked to one database).
+	HonorableMention string        `json:"honorable_mention,omitempty"`
+	Pros             []string      `json:"pros"`
+	Cons             []string      `json:"cons"`
+	Flexibility      Flexibility   `json:"flexibility"`
+	EaseOfUse        EaseOfUse     `json:"ease_of_use"`
+	LearningCurve    LearningCurve `json:"learning_curve"`
+	Community        Community     `json:"community"`
 }
 
 // CellNote is a caveat printed next to one library's numbers for one scenario.
@@ -84,7 +88,8 @@ func (rb Rubric) validate() error {
 	if sum == 0 {
 		return fmt.Errorf("weights are all zero")
 	}
-	if _, err := time.Parse(dateLayout, rb.CommunityChecked); err != nil {
+	checked, err := time.Parse(dateLayout, rb.CommunityChecked)
+	if err != nil {
 		return fmt.Errorf("community_checked %q is not a YYYY-MM-DD date", rb.CommunityChecked)
 	}
 	libs := make(map[string]bool, len(rb.Libraries))
@@ -94,13 +99,20 @@ func (rb Rubric) validate() error {
 			return fmt.Errorf("library with empty name")
 		case l.Display == "":
 			return fmt.Errorf("library %q has empty display", l.Name)
+		case strings.ContainsAny(l.Display, "\r\n"):
+			return fmt.Errorf("library %q: display contains a newline", l.Name)
 		case libs[l.Name]:
 			return fmt.Errorf("duplicate library %q", l.Name)
+		case strings.ContainsAny(l.HonorableMention, "\r\n"):
+			return fmt.Errorf("library %q: honorable_mention contains a newline", l.Name)
 		}
-		for _, check := range []func(string) error{l.Flexibility.validate, l.EaseOfUse.validate, l.LearningCurve.validate, l.Community.validate} {
+		for _, check := range []func(string) error{l.Flexibility.validate, l.EaseOfUse.validate, l.LearningCurve.validate} {
 			if err := check(l.Name); err != nil {
 				return err
 			}
+		}
+		if err := l.Community.validate(l.Name, checked); err != nil {
+			return err
 		}
 		libs[l.Name] = true
 	}
@@ -117,6 +129,17 @@ func (rb Rubric) validate() error {
 		}
 	}
 	return nil
+}
+
+// honorableMentions returns the names of the libraries kept out of the ranking.
+func (rb Rubric) honorableMentions() map[string]bool {
+	mentions := make(map[string]bool)
+	for _, l := range rb.Libraries {
+		if l.HonorableMention != "" {
+			mentions[l.Name] = true
+		}
+	}
+	return mentions
 }
 
 func (rb Rubric) library(name string) (LibraryInfo, bool) {

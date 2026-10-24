@@ -3,18 +3,19 @@
   "methodology": [
     "Every database/sql-based library uses the same pgx/stdlib driver (pgx), never lib/pq.",
     "pgx and pgx_pool bypass database/sql and use pgxpool with the pool sized like every other adapter. pgx collects rows into structs with its CollectRows/RowToStructByName helpers; pgx_pool scans into locals like the database/sql reference, so it shows the driver floor. Both use pgx's default statement cache, never an explicit Prepare.",
-    "A cell is one library x scenario x profile combination, for example sqlx/join/low. It is the unit that is measured, reduced to the median of the repeats and ranked; an n/a cell is excluded.",
+    "The ranking and the Top 5 cover database-agnostic libraries. pgx and pgx_pool are PostgreSQL-only, so they are honorable mentions: they are measured and shown in every table, but they take no rank from the other libraries, and their score is computed as if they had joined the ranking.",
+    "A case is one scenario (insert, update, delete, select, join or union) under one load profile (low or stress), written scenario/profile, for example join/low. Every library is run through the same cases. Each case is measured several times and the median is what is reported and ranked, on three measures: latency (p95), memory (B/op, bytes allocated per operation) and CPU (CPU ns/op). A case the library cannot express is n/a and left out of the ranking.",
     "pop cannot take an existing *sql.DB, so it opens its own pool through its PostgreSQL dialect, which uses the same pgx stdlib driver; the pool is sized like every other adapter.",
     "Numbers are only comparable on the machine and run they were measured on; the host is listed above.",
-    "Each cell is the median of the repeats listed in the run configuration. Before the matrix runs, every adapter is checked against the database/sql reference on returned values, and every read scans every selected column.",
+    "Each case is the median of the repeats listed in the run configuration. Before the matrix runs, every adapter is checked against the database/sql reference on returned values, and every read scans every selected column.",
     "Latency is the per-call service time of successful operations with exact nearest-rank percentiles; it is not corrected for coordinated omission.",
     "B/op, allocs/op and CPU ns/op are deltas over the measured window divided by ops and include harness and GC cost.",
     "B/op and allocs/op also include each library's idiomatic result handling: sqlx, sqlc, gorm, ent and jet materialise rows, while the database/sql reference scans into locals, so part of the difference is the cost of that handling.",
-    "A scenario counts as supported only when the library's own query API (or, for the SQL-first sqlc and sqlx, its SQL) expresses it; needing the raw-SQL escape hatch makes the cell n/a and it is not ranked.",
-    "A library's score averages the ranks of its own ranked cells only, and a rank is absolute (1 is best, N is worst among the libraries in that cell). A library with n/a or excluded cells is therefore judged on fewer, possibly easier, scenarios; the Ranked cells column shows how many.",
+    "A scenario counts as supported only when the library's own query API (or, for the SQL-first sqlc and sqlx, its SQL) expresses it; needing the raw-SQL escape hatch makes the case n/a and it is not ranked.",
+    "A library's score is the weighted geometric mean, over its ranked cases, of each metric divided by database/sql's value in the same case: 1.00 is the same as database/sql, 2.00 twice as much, 0.50 half, and lower is better. A ratio keeps the size of a difference, so a 1% gap moves the score by about 1% instead of a whole place, and a library's score does not depend on which other libraries were run. A library with n/a or excluded cases is judged on fewer, possibly easier, scenarios; the Ranked cases column shows how many.",
     "Ease of use and learning curve are the author's judgement from writing and reviewing these adapters and reading each library's documentation, not measurements, and they are not ranked. Community facts (stars, last release, last commit, open issues) were read from the forge APIs on the date shown in that section; a release date is the date the latest release was published, or the tag commit date where the notes say so.",
     "Stress-profile p99 on macOS includes a constant 100-200 ms host-to-VM stall (Postgres runs in an OrbStack VM) and is not a property of the library.",
-    "Run-to-run stability (two full runs on this machine, 2026-10-24, see .claude/PRPs/reports/full-run-report.md): p95 differed by 20% or less in 62 of 72 cells; the other 10 are all low-profile cells and reached up to 48%, while every stress cell stayed under 9%. The same five libraries made the top 5 in both runs, but sqlx and sqlc swapped ranks 2 and 3, so the order of database/sql, sqlx and sqlc is within noise. The cause is environmental (loaded macOS host, host-VM network crossing, WAL fsync on the VM disk); see .claude/PRPs/reports/p95-stability-report.md."
+    "Run-to-run stability (two full 15-library runs on this machine, 2026-10-24; the earlier 6-library pair had 62 of 72 cases within 20%, all 10 beyond at the low profile, and all 36 stress cases within 8.7%): p95 differed by 20% or less in 130 of 166 cases. The other 36 are 35 low-profile cases, which reached up to 114% (pgx select), and one stress case (pop insert, 27%); the remaining 82 stress cases stayed under 18%. The top 5 had the same libraries in the same order in both runs, and the five scores moved by 0.05 or less (beego most, 1.31 to 1.36), but sqlc and sqlx are 0.01 apart in both runs, so their order is within noise. The cause is environmental (loaded macOS host, host-VM network crossing, WAL fsync on the VM disk)."
   ],
   "community_checked": "2026-10-24",
   "libraries": [
@@ -48,8 +49,8 @@
       },
       "community": {
         "repo": "golang/go",
-        "stars": 139505,
-        "open_issues": 9832,
+        "stars": 139506,
+        "open_issues": 9834,
         "last_release": "2026-10-20",
         "last_commit": "2026-10-23",
         "note": "Counts cover the whole Go project, not database/sql alone; the release date is the go1.27.3 tag commit (the repository publishes no GitHub releases)."
@@ -138,7 +139,7 @@
       },
       "community": {
         "repo": "jmoiron/sqlx",
-        "stars": 17738,
+        "stars": 17739,
         "open_issues": 317,
         "last_release": "2024-04-23",
         "last_commit": "2024-05-30"
@@ -159,7 +160,7 @@
         "Query API covers INSERT, UPDATE, DELETE, SELECT and JOIN (Joins with a relation produces one SQL JOIN)."
       ],
       "cons": [
-        "UNION is not expressible without raw SQL, so that cell is n/a.",
+        "UNION is not expressible without raw SQL, so that case is n/a.",
         "Defaults need care to benchmark fairly: every write is wrapped in a transaction unless SkipDefaultTransaction is set, and Save or Updates(struct) misreport or skip zero values and missing rows unless guarded."
       ],
       "ease_of_use": {
@@ -182,7 +183,7 @@
       },
       "community": {
         "repo": "go-gorm/gorm",
-        "stars": 39988,
+        "stars": 39986,
         "open_issues": 457,
         "last_release": "2026-06-25",
         "last_commit": "2026-10-23"
@@ -205,7 +206,7 @@
       ],
       "cons": [
         "JOIN is edge eager-loading: two queries rather than one SQL JOIN.",
-        "UNION is not expressible without raw SQL, so that cell is n/a.",
+        "UNION is not expressible without raw SQL, so that case is n/a.",
         "Needs a generation step (make gen-ent) and a large amount of committed generated code."
       ],
       "ease_of_use": {
@@ -228,7 +229,7 @@
       },
       "community": {
         "repo": "ent/ent",
-        "stars": 17209,
+        "stars": 17208,
         "open_issues": 502,
         "last_release": "2026-03-23",
         "last_commit": "2026-10-14"
@@ -273,7 +274,7 @@
       },
       "community": {
         "repo": "go-jet/jet",
-        "stars": 3819,
+        "stars": 3820,
         "open_issues": 33,
         "last_release": "2026-10-06",
         "last_commit": "2026-10-09"
@@ -291,6 +292,7 @@
     {
       "name": "pgx", "display": "pgx", "module": "pgx",
       "label": "", "version_used": "v5.11.0",
+      "honorable_mention": "pgx is a PostgreSQL-only driver API, so code written against it cannot move to another database.",
       "pros": [
         "Native PostgreSQL driver API without database/sql; rows are collected into structs with `CollectRows`/`RowToStructByName`.",
         "Every scenario, including UNION, is plain SQL."
@@ -319,7 +321,7 @@
       },
       "community": {
         "repo": "jackc/pgx",
-        "stars": 14352,
+        "stars": 14354,
         "open_issues": 182,
         "last_release": "2026-09-07",
         "last_commit": "2026-10-21",
@@ -336,6 +338,7 @@
     {
       "name": "pgx_pool", "display": "pgx_pool", "module": "pgx",
       "label": "", "version_used": "v5.11.0",
+      "honorable_mention": "pgx is a PostgreSQL-only driver API, so code written against it cannot move to another database.",
       "pros": [
         "Lowest-level adapter here: pgxpool with Query and Scan into locals, so it shows the cost of the driver and pool alone.",
         "Every scenario, including UNION, is plain SQL."
@@ -364,7 +367,7 @@
       },
       "community": {
         "repo": "jackc/pgx",
-        "stars": 14352,
+        "stars": 14354,
         "open_issues": 182,
         "last_release": "2026-09-07",
         "last_commit": "2026-10-21",
@@ -441,7 +444,7 @@
         "The ORM (Ormer, QuerySeter) runs on a plain *sql.DB through AddAliasWthDB, so it shares the pgx stdlib driver; JOIN is RelatedSel on a foreign-key field, loaded in the same query."
       ],
       "cons": [
-        "UNION is not expressible without raw SQL, so that cell is n/a.",
+        "UNION is not expressible without raw SQL, so that case is n/a.",
         "Global registries: models register once before first use and a database alias name cannot be reused, so the adapter registers a fresh alias on every Init.",
         "A query that never calls Limit is capped at 1000 rows by default."
       ],
@@ -465,7 +468,7 @@
       },
       "community": {
         "repo": "beego/beego",
-        "stars": 32430,
+        "stars": 32429,
         "open_issues": 7,
         "last_release": "2026-04-03",
         "last_commit": "2026-03-09",
@@ -499,7 +502,7 @@
       ],
       "cons": [
         "Destroy and Query.Delete report no rows affected, so the adapter's DELETE returns 1 for any error-free call; a missing id would also report 1.",
-        "UNION is not expressible without RawQuery, so that cell is n/a.",
+        "UNION is not expressible without RawQuery, so that case is n/a.",
         "Opens its own pool (no *sql.DB injection), though on the same pgx stdlib driver.",
         "Create, Update and Destroy run model lifecycle callbacks (before/after hooks)."
       ],
@@ -554,7 +557,7 @@
         "Query API covers INSERT, UPDATE (UpdateAny), DELETE (DeleteAny), SELECT and JOIN (JoinOn, one SQL statement); UpdateAny and DeleteAny report rows affected."
       ],
       "cons": [
-        "UNION is not expressible without raw SQL, so that cell is n/a.",
+        "UNION is not expressible without raw SQL, so that case is n/a.",
         "The PostgreSQL adapter (go-rel/postgres v0.12.0) has had no release since 2024-05.",
         "Logs every statement by default; the adapter installs a no-op instrumenter."
       ],
@@ -611,7 +614,7 @@
         "JOIN is qm.InnerJoin bound onto a struct with Bind: one SQL statement."
       ],
       "cons": [
-        "UNION is not expressible without raw SQL, so that cell is n/a.",
+        "UNION is not expressible without raw SQL, so that case is n/a.",
         "Needs a generation step against the live database (make gen-sqlboiler, which also needs the sqlboiler-psql driver binary on PATH) and a large amount of committed generated code.",
         "Insert reports no rows affected, so the adapter counts any error-free insert as 1 row.",
         "The JOIN clause and the Bind destination (alias-prefixed columns) are written by hand as strings."
@@ -670,7 +673,7 @@
         "JOIN is the generated Join with a field Select: one SQL statement."
       ],
       "cons": [
-        "UNION is not expressible without raw SQL, so that cell is n/a.",
+        "UNION is not expressible without raw SQL, so that case is n/a.",
         "Create reports no rows affected, so the adapter counts any error-free insert as 1 row.",
         "No generator CLI in the module: make gen-gormgen runs a small program (internal/adapters/gormgen/generate) against the live database, and the generated code is committed.",
         "gorm.io/gen v0.3.29 requires gorm.io/plugin/dbresolver v1.5.3, which does not compile against gorm v1.31.2; go.mod pins dbresolver v1.6.2.",
@@ -779,19 +782,19 @@
   ],
   "cell_notes": [
     {"library": "ent", "scenario": "join", "note": "ent JOIN is edge eager-loading (WithCustomer): two queries, orders then their customers, not one SQL JOIN. Read its JOIN numbers with that in mind."},
-    {"library": "ent", "scenario": "union", "note": "n/a: ent's query API cannot express UNION, and using raw SQL would not measure ent. The cell is not ranked."},
-    {"library": "gorm", "scenario": "union", "note": "n/a: gorm's query API cannot express UNION without raw SQL. The cell is not ranked."},
+    {"library": "ent", "scenario": "union", "note": "n/a: ent's query API cannot express UNION, and using raw SQL would not measure ent. The case is not ranked."},
+    {"library": "gorm", "scenario": "union", "note": "n/a: gorm's query API cannot express UNION without raw SQL. The case is not ranked."},
     {"library": "gorm", "scenario": "insert", "note": "gorm runs with SkipDefaultTransaction; by default it wraps every write in a transaction."},
     {"library": "gorm", "scenario": "update", "note": "gorm runs with SkipDefaultTransaction (by default every write is wrapped in a transaction) and Updates takes an explicit column list, because Updates(struct) skips zero values."},
     {"library": "gorm", "scenario": "delete", "note": "gorm runs with SkipDefaultTransaction; by default it wraps every write in a transaction."},
     {"library": "beego", "scenario": "join", "note": "beego JOIN is RelatedSel on a foreign-key field (one SQL statement, customer loaded with the order)."},
-    {"library": "beego", "scenario": "union", "note": "n/a: beego's query API cannot express UNION without raw SQL. The cell is not ranked."},
+    {"library": "beego", "scenario": "union", "note": "n/a: beego's query API cannot express UNION without raw SQL. The case is not ranked."},
     {"library": "pop", "scenario": "delete", "note": "pop's Destroy reports no rows affected, so the adapter counts any error-free delete as 1 row; the benchmark only deletes existing ids."},
-    {"library": "pop", "scenario": "union", "note": "n/a: pop's query API cannot express UNION without RawQuery. The cell is not ranked."},
-    {"library": "rel", "scenario": "union", "note": "n/a: rel's query API cannot express UNION without raw SQL. The cell is not ranked."},
-    {"library": "sqlboiler", "scenario": "union", "note": "n/a: sqlboiler's query mods cannot express UNION without raw SQL. The cell is not ranked."},
+    {"library": "pop", "scenario": "union", "note": "n/a: pop's query API cannot express UNION without RawQuery. The case is not ranked."},
+    {"library": "rel", "scenario": "union", "note": "n/a: rel's query API cannot express UNION without raw SQL. The case is not ranked."},
+    {"library": "sqlboiler", "scenario": "union", "note": "n/a: sqlboiler's query mods cannot express UNION without raw SQL. The case is not ranked."},
     {"library": "sqlboiler", "scenario": "insert", "note": "sqlboiler's Insert reports no rows affected, so the adapter counts any error-free insert as 1 row."},
-    {"library": "gorm_gen", "scenario": "union", "note": "n/a: gorm/gen's query API cannot express UNION without raw SQL. The cell is not ranked."},
+    {"library": "gorm_gen", "scenario": "union", "note": "n/a: gorm/gen's query API cannot express UNION without raw SQL. The case is not ranked."},
     {"library": "xorm", "scenario": "union", "note": "xorm UNION is xorm.io/builder's Union (the query builder xorm itself uses) passed to SQL, so it is measured, not n/a."},
     {"library": "gorm_gen", "scenario": "insert", "note": "gorm/gen's Create reports no rows affected, so the adapter counts any error-free insert as 1 row; it runs with SkipDefaultTransaction like the gorm adapter."}
   ]

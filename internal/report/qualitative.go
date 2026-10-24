@@ -111,7 +111,9 @@ func (c LearningCurve) validate(library string) error {
 	return validateNotes(library, "learning curve", c.Notes)
 }
 
-func (c Community) validate(library string) error {
+// validate checks the counts and dates; checked is Rubric.CommunityChecked, and a fact cannot be
+// dated after the day it was read.
+func (c Community) validate(library string, checked time.Time) error {
 	switch {
 	case strings.TrimSpace(c.Repo) == "":
 		return fmt.Errorf("library %q: community has empty repo", library)
@@ -121,11 +123,15 @@ func (c Community) validate(library string) error {
 	if strings.ContainsAny(c.Note, "\r\n") {
 		return fmt.Errorf("library %q: community note contains a newline", library)
 	}
-	if _, err := time.Parse(dateLayout, c.LastRelease); err != nil {
-		return fmt.Errorf("library %q: community last_release %q is not a YYYY-MM-DD date: %w", library, c.LastRelease, err)
-	}
-	if _, err := time.Parse(dateLayout, c.LastCommit); err != nil {
-		return fmt.Errorf("library %q: community last_commit %q is not a YYYY-MM-DD date: %w", library, c.LastCommit, err)
+	dates := []struct{ field, value string }{{"last_release", c.LastRelease}, {"last_commit", c.LastCommit}}
+	for _, d := range dates {
+		date, err := time.Parse(dateLayout, d.value)
+		if err != nil {
+			return fmt.Errorf("library %q: community %s %q is not a YYYY-MM-DD date: %w", library, d.field, d.value, err)
+		}
+		if date.After(checked) {
+			return fmt.Errorf("library %q: community %s %s is after community_checked %s", library, d.field, d.value, checked.Format(dateLayout))
+		}
 	}
 	return nil
 }
@@ -159,7 +165,7 @@ func writeNotes(sb *strings.Builder, libs []LibraryInfo, notes func(LibraryInfo)
 func writeEaseOfUse(sb *strings.Builder, rb Rubric, r ranking) {
 	libs := inRunLibraries(rb, r)
 	sb.WriteString("## Ease of use (qualitative)\n\n")
-	sb.WriteString("Hand-written judgement of the day-to-day work a library asks for. It is not part of the score, the Top 5 or the stability check. `good` = little work or checked early, `fair` = some manual work or checked only partly, `poor` = mostly manual or checked only at run time.\n\n")
+	sb.WriteString("Hand-written judgement of the day-to-day work a library asks for. It is not part of the score, the Top 5 or the stability check. Levels for setup effort, query writing and type safety: `good` = little work or checked early, `fair` = some manual work or checked only partly, `poor` = mostly manual or checked only at run time. Levels for debugging: `good` = the SQL that ran and its errors are visible with little setup, `fair` = visible after configuring logging or hooks, `poor` = hard to see what ran.\n\n")
 	sb.WriteString("Criteria: setup effort = codegen, config and boilerplate before the first query; query writing = code a typical query takes; type safety = how many mistakes the compiler catches; debugging = SQL visibility, error messages and logging hooks.\n\n")
 	sb.WriteString("| Library |")
 	for _, c := range easeCriteria {
