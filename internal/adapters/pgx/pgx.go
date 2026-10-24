@@ -9,6 +9,7 @@ package pgx
 import (
 	"context"
 	"fmt"
+	"math"
 	"time"
 
 	pgxlib "github.com/jackc/pgx/v5"
@@ -68,6 +69,9 @@ type base struct {
 func (b *base) Name() string { return b.name }
 
 func (b *base) Init(ctx context.Context, dsn string, pool bench.PoolConfig) error {
+	if pool.MaxOpen < 1 || pool.MaxOpen > math.MaxInt32 {
+		return fmt.Errorf("%s: MaxOpen %d out of range [1, %d]", b.name, pool.MaxOpen, math.MaxInt32)
+	}
 	cfg, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
 		return fmt.Errorf("%s: parse dsn: %w", b.name, err)

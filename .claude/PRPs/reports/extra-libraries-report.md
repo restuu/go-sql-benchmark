@@ -60,16 +60,16 @@ Flexibility, ease of use, learning curve (hand-written levels) and community sup
 
 From the first `ecc:go-reviewer` pass (batch 1):
 
-1. `pgx` `Init` takes `MaxOpen` as `int32` without rejecting `MaxOpen < 1`.
+1. ~~`pgx` `Init` takes `MaxOpen` as `int32` without rejecting `MaxOpen < 1`.~~ Fixed on `chore/review-followups`: `Init` rejects `MaxOpen` outside [1, MaxInt32].
 2. Calling `Init` twice without `Close` leaks the first pool (also true for `databasesql`).
 3. pgxpool's health-check goroutine and idle-connection ping are a small asymmetry against database/sql.
 4. `pgx` `ReadJoin`/`ReadUnion` return a non-nil empty slice, `pgx_pool` and the reference return nil (harmless).
-5. pgx tests miss double Close, `MaxOpen` 0, and `pgx` vs `pgx_pool` agreement on an empty join.
+5. ~~pgx tests miss double Close, `MaxOpen` 0, and `pgx` vs `pgx_pool` agreement on an empty join.~~ Added.
 
 From batches 2-4:
 
-6. `gen-sqlboiler` hardcodes host 127.0.0.1, user `postgres` and db `bench`, while `gen-jet` honours `BENCH_DSN`.
-7. `internal/adapters/gormgen/generate/main.go` has `//go:build ignore`, so `make build`/`vet` never compile it (consider `go vet` on that file in `make vet`).
+6. ~~`gen-sqlboiler` hardcodes host, user and db while `gen-jet` honours `BENCH_DSN`.~~ `gen-sqlboiler` now refuses a `BENCH_DSN` that differs from the one built from `BENCH_PG_PORT` and `BENCH_PG_PASSWORD`.
+7. ~~`internal/adapters/gormgen/generate/main.go` is never compiled by `make vet`.~~ `make vet` now vets that file explicitly.
 8. The JOIN filter column differs: pop and rel filter on `customers.id`, the others on `orders.customer_id` (same plan via the equivalence class).
 9. beego keeps one closed alias per `Init` in its global registry (negligible), and a panic inside its `RegisterModel` `sync.Once` would leave the opened `sql.DB` unclosed.
 
