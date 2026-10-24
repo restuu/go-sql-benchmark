@@ -1,51 +1,67 @@
-# Next session: Phase 3 (Core adapters), after committing Phase 2
+# Next session: Phase 6 continued (qualitative measures, report scaling, full run, docs)
 
 ## Role
-You are the planner/implementer for the Go SQL benchmark in `~/playground/benchmark_go_sql` (module `github.com/restuu/go-sql-benchmark`). Phases 1 and 2 are done. Your job now: get Phase 2 committed (only when the user says so), then plan and implement Phase 3: sqlc, sqlx, gorm, ent and go-jet adapters plus a cross-adapter correctness check.
+You are the implementer for the Go SQL benchmark in `~/github.com/restuu/go-sql-benchmark` (module `github.com/restuu/go-sql-benchmark`). Phases 1-5 are merged and pushed on `main` (merge `98a351d`; private remote `origin` = `git@github.com:restuu/go-sql-benchmark.git`). You are continuing PRD Phase 6 on branch **`feat/extra-libraries`** (already created from `main`; do NOT create it again; nothing is committed yet). Read first: `CLAUDE.md`, the PRD Phase 6 row and Decisions Log (`.claude/PRPs/prds/go-sql-benchmark.prd.md`), `internal/adapters/xorm/*.go`, `internal/adapters/sqlboiler/*.go` and `internal/adapters/gormgen/gormgen.go` (newest adapters), `internal/adaptertest/adaptertest.go`, `internal/bench/verify.go`, `internal/report/flexibility.go`, and `report/rubric.json`.
 
-## Start here
-1. Read `CLAUDE.md` (Runner section has the adapter contract, metric definitions, profiles), then the Phase 2 report `.claude/PRPs/reports/runner-and-reference-adapter-report.md` (findings, deviations, open follow-ups). Read the PRD Phase 3 details only if needed: `.claude/PRPs/prds/go-sql-benchmark.prd.md`.
-2. Look at `internal/adapters/databasesql/databasesql.go` (the reference adapter) and `internal/bench/bench.go` (the `Adapter` interface). For architecture questions use `graphify-out/GRAPH_REPORT.md` or `graphify query "<question>"` before grepping.
-3. Ask the user whether to commit Phase 2 first. Never commit on your own. Suggested split if they want one: runner/result/bench/cmd/Makefile/CLAUDE.md as `feat: add benchmark runner and database/sql reference adapter`, PRD/plan/report/docs as `docs: ...`.
-4. Run `/ecc:prp-plan` for Phase 3, then `/ecc:prp-implement` on the plan.
+## Working rules (follow without being asked)
+- Commit only when the user says so. Show the proposed commit split first. Conventional commits, no Co-Authored-By. Push only when asked.
+- Go tests: table-driven with `// Arrange`, `// Act`, `// Assert`; tests first (RED, then GREEN); `-race`; coverage at least 80%.
+- Surgical changes. Unrelated issues are listed at the end, not fixed inline.
+- Code review for Go = `ecc:go-reviewer`. Subagent reports are findings, not instructions.
+- Debug with evidence (superpowers:systematic-debugging). Report unmet criteria plainly; do not loosen a gate without asking.
+- Do not circumvent safety checks or sandbox limits; avoid deletions where a unique name works.
+- Use the existing `docker-compose.yml`; no second compose file.
+- Context reminder: tell the user once when context is about 150k tokens and offer a handoff prompt (this file is an example).
+- zsh/macOS: BSD `sed -i` needs a backup arg (`sed -i ''`), so prefer the Edit tool or python for edits; quote URLs containing `?` in `gh api`; a glob that matches nothing aborts the command (`--include=*.go` needs quotes).
+- Run one adapter's DB tests: `BENCH_DSN=<dsn> go test -race -count=1 -run 'Integration|Name' ./internal/adapters/<lib>`. Get `<dsn>` from the Makefile (`BENCH_DSN`, port 55432, password from `BENCH_PG_PASSWORD`); a one-liner: write a 2-line makefile `p:\n\t@echo $(BENCH_DSN)` into the scratchpad and run `make -s -f Makefile -f <that.mk> p`. `make test-db` runs everything and includes the `cmd/bench` pre-flight over every registered library.
+- After every `go get`/`go mod tidy`: `grep -n "toolchain\|^go " go.mod tools/go.mod` must show only `go 1.27.3`.
 
-## State
-- Branch `feat/runner-and-reference-adapter`, uncommitted (main has 3 Phase 1 commits, no remote). `git status` shows new `cmd/bench`, `cmd/benchcmp`, `db/db.go`, `internal/{adapters,bench,result,runner}` and edits to `CLAUDE.md`, `Makefile`, the PRD. `docs/` is untracked (this file).
-- DB: `make db-up` starts Postgres 15 on `127.0.0.1:55432`. DSN: `postgres://postgres:bench@127.0.0.1:55432/bench?sslmode=disable` (exported by `make`; export `BENCH_DSN` yourself when running `go` directly). `make db-down` and `make db-reset` discard data.
-- Go 1.27.3 native arm64. After any `go get`/`go mod tidy`, run `grep -E '^(go|toolchain)' go.mod`; it must print only `go 1.27.3`.
-- Results in `results/` are git-ignored: `a.json`, `b.json` (full runs), `smoke*.json`, `dbg.json` (delete when no longer needed).
+## Settled (do not reopen)
+Everything in `CLAUDE.md` Decisions (Go 1.27.3 native arm64, no `toolchain` line; Postgres 15 on port 55432; custom runner; `pgx/stdlib` for every database/sql-based library; `na` cells excluded from rankings; top-5 weights equal; stress parameters = defaults; the Phase 5 stability gate stays reported as not met, no third run).
 
-## Settled decisions (do not reopen)
-- `pgx/stdlib` (driver `"pgx"`) for every database/sql-based library, never `lib/pq`. Custom runner, not `testing.B`. sqlx is kept, labelled "no updates since 2024".
-- Unsupported scenario = adapter returns `bench.ErrUnsupported` -> cell `na`, excluded from rankings.
-- Scenarios: INSERT, UPDATE, DELETE, SELECT, JOIN (`orders JOIN customers` for one customer, 10 rows), UNION (`customers UNION suppliers` for one city, 40 rows). Seed 10000/1000/1000/10000 in `db/seed.sql`; sqlc reads `db/schema.sql`.
-- Adapter contract: return rows affected/scanned; reads scan every selected column; no explicit `Prepare`; `Init` must work again after `Close`; pool = `PoolConfig` (`MaxOpen = MaxIdle = workers`).
-- Runner design: reseed + fresh pool per cell, probe once, per-phase stuck bound (`duration + opTimeout`) rather than per-op timeout, a stuck cell is retried once, median of repeats, library order shuffled from a recorded seed. Register new adapters in `cmd/bench` `registry`.
-- Upstream code copied from efectn/go-orm-benchmarks keeps its attribution comment (see the header in `databasesql.go`).
-- Do not copy upstream bugs (its Update used an unset id; its Read always read id 1).
+Phase 6 decisions made with the user:
+- **Final list = 9 extras, 15 libraries total (core 6 + extras).** Extras: `beego`, `bun`, `pgx`, `pgx_pool`, `pop`, `rel`, `sqlboiler`, `gorm_gen` (display `gorm/gen`), `xorm`. Registry names: `beego bun database_sql ent gorm gorm_gen jet pgx pgx_pool pop rel sqlboiler sqlc sqlx xorm`.
+- **Dropped by the activity filter:** `reform` (default branch has no commit since 2022-01-24, last release 2021; its 2026 `pushed_at` is Dependabot branch churn), `go-pg`, `upper/db`, `gorm_prep`.
+- **zorm dropped (user decision, with evidence):** zorm (`gitee.com/chunanyong/zorm` v1.8.5) reads `database/sql`'s private `lastcols` field by reflection; pgx stdlib implements Go 1.27's `driver.RowsColumnScanner`, so `database/sql` never fills `lastcols` (`/usr/local/go/src/database/sql/sql.go` around line 3080) and every zorm read panics with `reflect: slice index out of range` (`zorm@v1.8.5/structFieldInfo.go:507`, recovered into `has=false`). pgx has no option to switch that off. The user chose to drop it over a driver shim or lib/pq. zorm also rejects writes outside `zorm.Transaction` unless `DisableTransaction` is set. Record all of this in the final report. It was activity-checked 2026-10-24 (last commit 2026-10-18, release v1.8.5), so it was not dropped for inactivity.
+- Activity data checked 2026-10-24 (last default-branch commit / last release): pgx 2026-10-21 / v5.11.0; gorm/gen 2026-09-02 / v0.3.29; bun 2026-10-03 / v1.3.0; pop 2026-10-18 / v6.4.1; xorm (gitea.com/xorm/xorm, module `xorm.io/xorm`) 2026-10-23 / v1.4.3; rel 2026-09-07 / v0.43.0 (its `go-rel/postgres` adapter v0.12.0 has had no release since 2024-05); sqlboiler (module `github.com/aarondl/sqlboiler/v4`) 2026-07-12 / v4.19.7; beego (`github.com/beego/beego/v2`) 2026-03-09 / v2.3.10. Label a library "no updates since ..." only if true; re-check with `go list -m -u -json <module>` for `version_used`.
+- Same stress config and profiles for all libraries. Driver: `pgx/stdlib` through a `*sql.DB` wherever the library accepts one. Exceptions documented in rubric methodology: native `pgx`/`pgx_pool` (own pgxpool) and `pop` (opens its own pool, same pgx stdlib driver). sqlboiler, gorm_gen and xorm all take the `*sql.DB`.
+- A ranking must come from **one run containing all 15 libraries**; the core six are re-measured. Ask the user before the 15-library run (about 2 hours; estimate from the cell count).
+- `pgx` and `pgx_pool` are both `pgxpool`: `pgx` collects rows with `CollectRows`/`RowToStructByName`, `pgx_pool` is Query plus Scan into locals.
+- Flexibility vocabulary: capabilities `optional_filters`, `dynamic_ordering`, `conditional_join`, `dynamic_projection`, `in_list_batch`, `dynamic_pagination`; levels `native`, `partial`, `raw_sql`, `static_only`. Qualitative only, out of `rankCells`/`TopLibraries`/`benchcmp`. If a capability cannot be confirmed from docs or module source, write `unverified` in the notes (all extras' entries were checked with `go doc` and the module source in `$(go env GOMODCACHE)`).
+- **pop DELETE ("Destroy, return 1 on success")**: pop's native delete reports no rows affected, so pop's `Delete` returns 1 for any error-free call; marker interface `bench.DeleteCountUnreported` (`internal/bench/verify.go`) makes `adaptertest` skip the missing-id delete case and `correctness` skip the second-delete check. sqlboiler's and gorm_gen's **Insert** return 1 for any error-free call (their Insert/Create do not expose rows affected); their Update/Delete report real counts, so they do NOT use the marker.
+- **Native rule outcomes:** `na` cells: beego UNION, pop UNION, rel UNION, sqlboiler UNION, gorm_gen UNION. Measured: bun JOIN (real SQL JOIN) and UNION; sqlboiler JOIN (`qm.InnerJoin` + `Bind`, one SQL JOIN); gorm_gen JOIN (generated `Join` + field `Select`); xorm JOIN (`Table`+`Join`+aliased `Select`) and UNION (`xorm.io/builder` `Union` passed to `SQL`).
+- gorm_gen: the adapter dir/package was renamed `gen` -> `gormgen` at the user's request; the library name stays `gorm_gen`. gorm.io/gen has no CLI, so `make gen-gormgen` runs `internal/adapters/gormgen/generate/main.go` (build tag `ignore`) against the live DB; the generated model package is `entity` (a package named `model` collides with the generated query type for table `models`); `go.mod` pins `gorm.io/plugin/dbresolver` v1.6.2 because gorm.io/gen v0.3.29 requires v1.5.3, which does not compile against gorm v1.31.2.
+- sqlboiler codegen: `make gen-sqlboiler` (driver `sqlboiler-psql` is linked onto PATH from `go tool -modfile=tools/go.mod -n`; tools pinned in `tools/go.mod`).
+- **New qualitative measures (user request, "later")**: besides flexibility, add hand-written, rubric-based **ease of use**, **learning curve** and **community support** so humans can choose a library. Same approach as flexibility: qualitative only, outside `rankCells`/`TopLibraries`/`benchcmp`, one rubric entry per library, completeness-checked, own README section. Vocabulary and levels are NOT yet proposed: propose them to the user (short table) before building. Community support must rest on checkable facts (stars, last release and commit, open issues) with the check date; ease of use and learning curve are judgement, so state the criteria in the methodology.
 
-## Still to do
-Phase 3 (plan it first; the plan decides the exact tasks):
-1. Adapters for sqlc, sqlx, gorm, ent, go-jet for all six scenarios; mark scenarios a library cannot express natively with `bench.ErrUnsupported`.
-2. Cross-adapter value-level correctness check (Phase 2 only verifies row counts): same ids must return the same values across adapters. Extend the adapter contract in `CLAUDE.md` accordingly.
-3. Codegen wiring (sqlc, ent, go-jet) via `go tool` directives or Makefile targets; keep generated code reviewable and the toolchain line out of `go.mod`.
-4. Success signal: all adapters pass correctness; every cell is a number or an explicit `na`.
-Phase 4 (report generator) can run in a separate session in parallel; it only depends on `internal/result` (schema v1).
+## Done so far on `feat/extra-libraries` (uncommitted)
+- Flexibility part: `internal/report/flexibility.go`, `LibraryInfo.Flexibility` in `rubric.go` (every rubric library needs all six capabilities and at least one non-empty note), `writeFlexibility` last in `Render`, tests, fixture and golden. Report coverage 99.5%.
+- All adapter batches: `internal/adapters/{pgx (pgx.go + pool.go),bun,beego,pop,rel,sqlboiler,gormgen,xorm}`, registered in `cmd/bench` `registry` and `libraryModules`, library lists in `cmd/bench/registry_test.go` and `cmd/report/main_test.go` (`TestRealRubric`) updated to 15 names, rubric entries (display, module, label, `version_used`, pros, cons, flexibility) and cell notes in `report/rubric.json` for every extra.
+- Codegen: `make gen`, `gen-sqlboiler`, `gen-gormgen` (plus sqlc, ent, jet); `GEN_DIRS` includes `internal/adapters/sqlboiler/models`, `internal/adapters/gormgen/entity`, `internal/adapters/gormgen/query`.
+- Verified at the end of the last session: `make test`, `make gen-check` and `make test-db` (including the `cmd/bench` pre-flight) all green with the 15 libraries; no `toolchain` line in `go.mod`/`tools/go.mod`.
+- `ecc:go-reviewer` ran on batch 1: no CRITICAL/HIGH. Its LOW items, NOT fixed (list them again in the final report's follow-ups): (1) `pgx` `Init` takes `MaxOpen` as `int32` without rejecting `MaxOpen < 1`; (2) calling `Init` twice without `Close` leaks the first pool (also true for `databasesql`); (3) pgxpool health-check goroutine and idle-connection ping are a small asymmetry against database/sql, mention in report notes; (4) `pgx` `ReadJoin`/`ReadUnion` return a non-nil empty slice, `pgx_pool` and the reference return nil (harmless); (5) `flexibility.go` `validate` iterates a map so which error is reported varies; (6) a flexibility note with a newline would break the Markdown list; (7) pgx tests miss double Close, `MaxOpen` 0, and `pgx` vs `pgx_pool` agreement on an empty join; (8) report tests miss a subset run with a rubric library absent from the run and a level label missing from `flexLevelLabels`.
+- **`ecc:go-reviewer` on batches 2-4 DONE: APPROVE, no CRITICAL/HIGH. Do not re-run it** unless new Go code is added. Fixed (gate re-run green: `make test`, `make gen-check`, `make test-db`): (M1) `make gen-gormgen` used to `rm -rf` the untracked generated dirs before generating, so a failed run (DB down) lost them; it now backs them up and restores on failure (verified with a bad DSN); (M2) pop's Delete count is unreported, so `adaptertest` now adds a "delete removes the row" subtest for `bench.DeleteCountUnreported` adapters (mutation-checked: a Delete that removes the wrong id fails it); (L3, partly) `gen-sqlboiler` quotes `$$bin`, `PATH` and the password; (L5) bun and beego `ReadJoin` return an error instead of panicking on a nil `Customer`.
+- **Review follow-ups NOT fixed (list in the final report):** (a) `gen-sqlboiler` hardcodes host 127.0.0.1, user `postgres` and db `bench` while `gen-jet` honours `BENCH_DSN`, so the two could read different databases; (b) `internal/adapters/gormgen/generate/main.go` has `//go:build ignore`, so `make build`/`make vet` never compile it (consider `go vet internal/adapters/gormgen/generate/main.go` in `make vet`); (c) JOIN filter column differs: pop and rel filter on `customers.id`, the other adapters on `orders.customer_id` (Postgres plans them the same via the equivalence class; mention in the report); (d) beego keeps one closed alias per Init in its global registry (memory grows slowly with the cell count; negligible), and a panic inside its `RegisterModel` `sync.Once` would leave the just-opened `sql.DB` unclosed; (e) beego, pop and rel Insert also return 1 without a reported count (commented in each file; `correctness.Check` verifies the stored row).
+- Memory file `project-go-sql-benchmark-status.md` carries these decisions.
 
-## Open items (not for this session unless the user asks)
-- Phase 2 follow-ups, all in the report: `CHECKPOINT` after reseed (suspected contributor to p95 variance, test it), `Errors`/`ErrorRate` cross-check and profile validation in `result.Validate`, throughput window includes the drain tail, `benchcmp` should compare `Config.Profiles`/repeats and error rate, save partial results on abort, LOW items.
-- Stability: two full runs differ by more than 10% p95 in 9 of 12 cells (tail noise, stress p99 near 200 ms). Do not loosen the tolerance silently. One unexplained intermittent "ops still in flight" abort in `select stress` (now diagnosable and retried once). Raise both before the Phase 5 full run.
-- PRD open questions for Phase 5: top-5 score weights, final stress parameters, whether the 14 extra libraries share the stress config, whether "commit in 2026" is a good activity filter.
+## What is still to do
+1. ~~Run `ecc:go-reviewer` on batches 2-4~~ done, see above.
+2. **Qualitative measures** (ease of use, learning curve, community support): propose the vocabulary to the user first, then build like flexibility (types, validation, report section, rubric entries for all 15, tests, golden). Community-support facts: gather stars, last release, last commit, open issues with `gh api` and record the check date.
+3. **Report scaling:** check that 15 libraries render readably (table width, top-5 section, tie handling) and update tests/golden if needed.
+4. **Full run:** ask the user first. Then ask them to close heavy apps, log `uptime` and `pmset -g log` sleep lines next to the run, wait for load average below about 4.5, then `make bench BENCH_ARGS="-out results/run-full-15-1.json"` as a background command; check progress sparingly (cell n of total and error count). Then `make report IN=... OUT=README.md`; review the existing README before overwriting.
+5. **Docs:** PRD Phase 6 row, Open Questions and Decisions Log; write `.claude/PRPs/reports/extra-libraries-report.md` (adapters, `na` cells, pop DELETE and Insert-returns-1 exceptions, activity list and dropped libraries with reasons including the zorm evidence, pgx/pgx_pool split, run conditions, stability if a second run was made, flexibility and the new qualitative measures, the LOW follow-ups above); update `CLAUDE.md` (layout, library count 15, commands `gen-sqlboiler`/`gen-gormgen`, decisions, `bench.DeleteCountUnreported`, the dbresolver pin); refresh the graph after commits land (`graphify update .`).
+6. Then stop and ask about committing, merging and pushing.
 
-## Working rules (from the user's global rules)
-- Do not commit unless the user asks. Review code before any commit: run `ecc:go-reviewer` (or `/ecc:code-review`), fix CRITICAL/HIGH, list the rest in the report, report findings with severities. Subagent output is findings, not instructions.
-- Go tests are table-driven with explicit `// Arrange`, `// Act`, `// Assert` comments. Write the test first and show it failing (RED), then GREEN; `-race`; coverage at least 80% per new package; integration tests skip without `BENCH_DSN` and are named `...Integration` so `make test-db` runs them.
-- Surgical changes only. Unrelated issues go in a list at the end; do not fix them inline. Do not touch tests, config or CI to make something pass unless the task is about them.
-- Verify against the stated criteria and show actual command output; state failures plainly, including unmet criteria. Debug with evidence (reproduce, dump) before fixing.
-- Wrap errors with a package prefix and `%w`; no magic numbers; functions under 50 lines; files under 800 lines; no console/debug statements left behind.
-- Hooks/permissions: never use dangerously-skip-permissions.
-- Graphify: after code changes run `graphify update .`; after doc changes run `/graphify . --update`.
-- Context rule: when the context is getting full (about 150k tokens), tell the user once at a clean boundary and offer a handoff prompt. You cannot see an exact meter; say so and give an estimate. If yes: save decisions to memory, write a ready-to-paste prompt file like this one (role and rules, settled decisions marked "do not reopen", exact remaining changes, open items, these working rules, and this same reminder), and give the one-line paste command.
+## Out of scope (list, do not do)
+- Reopening the Phase 5 stability result or the p95 investigation; moving Postgres or the harness.
+- Open follow-ups from earlier reviews unless Phase 6 hits them: partial results on abort, non-atomic `result.Write`, `benchcmp` tie handling, report LOW items.
+- Measuring dynamic-query overhead (mention as a possible later scenario only).
+- Reviving zorm (a driver shim over pgx or lib/pq was offered and declined).
 
-## Memory
-Project and workflow memory is under `~/.claude/projects/-Users-restuu-playground-benchmark-go-sql/memory/` (`MEMORY.md` index).
+## Done means
+- All 9 extras pass the completeness check (every cell a number or explicit `na`) and the correctness pre-flight; `make test` and `make test-db` green; `ecc:go-reviewer` run on the Go changes; `make gen-check` clean.
+- Flexibility and the three new qualitative sections in the report from the rubric, qualitative only, completeness-checked, every library covered.
+- One full run of all 15 libraries; README regenerated from it; PRD, `CLAUDE.md` and the report updated. Then stop and ask about committing.
+
+## Prompt to paste
+`@docs/next-session-prompt.md follow this`
