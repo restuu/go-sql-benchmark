@@ -190,7 +190,8 @@ func (m Metrics) validate() error {
 	return nil
 }
 
-// Write validates the run and writes it as indented JSON, creating parent directories.
+// Write validates the run and writes it as indented JSON, creating parent directories. The file is
+// replaced atomically.
 func Write(path string, r Run) error {
 	if err := r.Validate(); err != nil {
 		return fmt.Errorf("result: write %s: %w", path, err)
@@ -202,10 +203,40 @@ func Write(path string, r Run) error {
 	if err := os.MkdirAll(filepath.Dir(path), resultDirMode); err != nil {
 		return fmt.Errorf("result: create dir: %w", err)
 	}
-	if err := os.WriteFile(path, append(data, '\n'), resultFileMode); err != nil {
+	if err := writeFileAtomic(path, append(data, '\n')); err != nil {
 		return fmt.Errorf("result: write %s: %w", path, err)
 	}
 	return nil
+}
+
+// writeFileAtomic writes data to a temp file in path's directory and renames it over path, so a
+// reader never sees a half-written result and a failed write leaves any existing file untouched.
+func writeFileAtomic(path string, data []byte) (err error) {
+	tmp, err := os.CreateTemp(filepath.Dir(path), filepath.Base(path)+".tmp-*")
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			_ = os.Remove(tmp.Name())
+		}
+	}()
+	if _, err = tmp.Write(data); err != nil {
+		_ = tmp.Close()
+		return err
+	}
+	if err = tmp.Chmod(resultFileMode); err != nil { // CreateTemp makes the file 0600
+		_ = tmp.Close()
+		return err
+	}
+	if err = tmp.Sync(); err != nil {
+		_ = tmp.Close()
+		return err
+	}
+	if err = tmp.Close(); err != nil {
+		return err
+	}
+	return os.Rename(tmp.Name(), path)
 }
 
 // Load reads and validates a result file.

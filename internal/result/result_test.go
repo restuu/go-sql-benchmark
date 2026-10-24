@@ -2,6 +2,7 @@ package result
 
 import (
 	"math"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -116,6 +117,55 @@ func TestWriteRejectsInvalid(t *testing.T) {
 	// Assert
 	if err == nil {
 		t.Fatal("Write() of an invalid run = nil, want error")
+	}
+}
+
+func TestWriteReplacesExistingFileWithoutLeftovers(t *testing.T) {
+	// Arrange
+	dir := t.TempDir()
+	path := filepath.Join(dir, "run.json")
+	writeFile(t, path, "stale content that is longer than nothing")
+	want := validRun()
+
+	// Act
+	writeErr := Write(path, want)
+	got, loadErr := Load(path)
+	entries, readErr := os.ReadDir(dir)
+	info, statErr := os.Stat(path)
+
+	// Assert
+	if writeErr != nil || loadErr != nil || readErr != nil || statErr != nil {
+		t.Fatalf("Write() = %v, Load() = %v, ReadDir() = %v, Stat() = %v", writeErr, loadErr, readErr, statErr)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("Load() after overwrite mismatch:\n got %+v\nwant %+v", got, want)
+	}
+	if len(entries) != 1 {
+		t.Fatalf("directory holds %d entries after Write, want only run.json", len(entries))
+	}
+	if info.Mode().Perm() != resultFileMode {
+		t.Fatalf("file mode = %v, want %v", info.Mode().Perm(), os.FileMode(resultFileMode))
+	}
+}
+
+func TestWriteFailureLeavesNoTempFile(t *testing.T) {
+	// Arrange
+	dir := t.TempDir()
+	path := filepath.Join(dir, "run.json")
+	if err := os.Mkdir(path, resultDirMode); err != nil {
+		t.Fatal(err)
+	}
+
+	// Act
+	err := Write(path, validRun())
+	entries, readErr := os.ReadDir(dir)
+
+	// Assert
+	if err == nil {
+		t.Fatal("Write() onto a directory = nil, want error")
+	}
+	if readErr != nil || len(entries) != 1 {
+		t.Fatalf("ReadDir() = %d entries, %v; want only the original directory", len(entries), readErr)
 	}
 }
 
