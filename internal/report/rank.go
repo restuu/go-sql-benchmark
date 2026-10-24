@@ -206,3 +206,14 @@ func competitionRanks(libs []libScore) []int {
 
 // rest returns every library not in top(n), including unranked ones.
 func (r ranking) rest(n int) []libScore { return r.libs[len(r.top(n)):] }
+
+// TopLibraries returns the names of the top-ranked libraries of a run, best first, using the
+// same ranking as the report.
+func TopLibraries(run result.Run, w Weights) []string {
+	top := rankCells(run, w).top(topCount)
+	names := make([]string, len(top))
+	for i, l := range top {
+		names[i] = l.library
+	}
+	return names
+}
