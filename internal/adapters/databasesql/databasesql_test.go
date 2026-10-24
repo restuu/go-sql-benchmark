@@ -148,3 +148,21 @@ func TestName(t *testing.T) {
 		t.Fatalf("Name() = %q, want database_sql", name)
 	}
 }
+
+func TestInitTwiceClosesFirstDBIntegration(t *testing.T) {
+	// Arrange
+	a, _, ctx := newInitialised(t)
+	first := a.(*Adapter).db
+	dsn := os.Getenv("BENCH_DSN")
+
+	// Act
+	err := a.Init(ctx, dsn, bench.PoolConfig{MaxOpen: 2, MaxIdle: 2})
+
+	// Assert
+	if err != nil {
+		t.Fatalf("second Init() = %v", err)
+	}
+	if first.PingContext(ctx) == nil {
+		t.Fatal("first pool still answers after a second Init: it leaked")
+	}
+}

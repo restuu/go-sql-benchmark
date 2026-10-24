@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/restuu/go-sql-benchmark/internal/adaptertest"
 	"github.com/restuu/go-sql-benchmark/internal/bench"
 )
@@ -166,5 +168,80 @@ func TestEmptyJoinAgreesIntegration(t *testing.T) {
 	// Assert
 	if !reflect.DeepEqual([]int{pgxJoin, pgxUnion}, []int{poolJoin, poolUnion}) || pgxJoin != 0 || pgxUnion != 0 {
 		t.Fatalf("empty reads: pgx = (%d, %d), pgx_pool = (%d, %d), want (0, 0) for both", pgxJoin, pgxUnion, poolJoin, poolUnion)
+	}
+}
+
+func poolOf(a bench.Adapter) *pgxpool.Pool {
+	switch v := a.(type) {
+	case *Adapter:
+		return v.pool
+	case *PoolAdapter:
+		return v.pool
+	}
+	return nil
+}
+
+func TestInitTwiceClosesFirstPoolIntegration(t *testing.T) {
+	dsn := os.Getenv("BENCH_DSN")
+	if dsn == "" {
+		t.Skip("BENCH_DSN not set")
+	}
+	for _, c := range constructors {
+		t.Run(c.name, func(t *testing.T) {
+			// Arrange
+			ctx := t.Context()
+			a := c.new()
+			t.Cleanup(func() { _ = a.Close() })
+			cfg := bench.PoolConfig{MaxOpen: 2, MaxIdle: 2}
+			if err := a.Init(ctx, dsn, cfg); err != nil {
+				t.Fatalf("first Init() = %v", err)
+			}
+			first := poolOf(a)
+			if first == nil {
+				t.Fatalf("poolOf(%T) = nil", a)
+			}
+
+			// Act
+			err := a.Init(ctx, dsn, cfg)
+
+			// Assert
+			if err != nil {
+				t.Fatalf("second Init() = %v", err)
+			}
+			if first.Ping(ctx) == nil {
+				t.Fatal("first pool still answers after a second Init: it leaked")
+			}
+		})
+	}
+}
+
+func TestEmptyVerifierReadsAreNilIntegration(t *testing.T) {
+	dsn := os.Getenv("BENCH_DSN")
+	if dsn == "" {
+		t.Skip("BENCH_DSN not set")
+	}
+	for _, c := range constructors {
+		t.Run(c.name, func(t *testing.T) {
+			// Arrange
+			ctx := t.Context()
+			a := c.new()
+			if err := a.Init(ctx, dsn, bench.PoolConfig{MaxOpen: 2, MaxIdle: 2}); err != nil {
+				t.Fatalf("Init() = %v", err)
+			}
+			t.Cleanup(func() { _ = a.Close() })
+			v := a.(bench.Verifier)
+
+			// Act
+			join, joinErr := v.ReadJoin(ctx, -1)
+			union, unionErr := v.ReadUnion(ctx, "nowhere")
+
+			// Assert
+			if joinErr != nil || unionErr != nil {
+				t.Fatalf("ReadJoin/ReadUnion errors = %v, %v", joinErr, unionErr)
+			}
+			if join != nil || union != nil {
+				t.Fatalf("empty reads = %#v, %#v, want nil slices", join, union)
+			}
+		})
 	}
 }

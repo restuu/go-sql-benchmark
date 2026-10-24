@@ -61,6 +61,13 @@ type unionRow struct {
 
 // base is the pool and the write scenarios, identical for both adapters. Statements run through
 // pgx's default statement cache; there is no explicit Prepare. It is not safe to call Init concurrently.
+// A second Init closes the previous pool first.
+//
+// Against the database/sql adapters the pool differs in two ways that do not reach a measured
+// window: pgxpool runs a background health check every minute and retires connections after 30
+// minutes idle or an hour of age, while database/sql keeps connections forever; every cell opens a
+// fresh pool that lives for seconds. Pinging a connection idle for over a second on checkout is the
+// same in both (pgx's stdlib ResetSession does it too).
 type base struct {
 	name string
 	pool *pgxpool.Pool
@@ -72,6 +79,7 @@ func (b *base) Init(ctx context.Context, dsn string, pool bench.PoolConfig) erro
 	if pool.MaxOpen < 1 || pool.MaxOpen > math.MaxInt32 {
 		return fmt.Errorf("%s: MaxOpen %d out of range [1, %d]", b.name, pool.MaxOpen, math.MaxInt32)
 	}
+	_ = b.Close() // never fails; keeps a repeated Init from leaking the previous pool
 	cfg, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
 		return fmt.Errorf("%s: parse dsn: %w", b.name, err)

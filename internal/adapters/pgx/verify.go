@@ -19,6 +19,9 @@ func (a *Adapter) ReadJoin(ctx context.Context, customerID int) ([]bench.JoinRow
 	if err != nil {
 		return nil, err
 	}
+	if len(rows) == 0 {
+		return nil, nil
+	}
 	out := make([]bench.JoinRow, len(rows))
 	for i, r := range rows {
 		out[i] = bench.JoinRow(r)
@@ -30,6 +33,9 @@ func (a *Adapter) ReadUnion(ctx context.Context, city string) ([]bench.UnionRow,
 	rows, err := a.unionRows(ctx, city)
 	if err != nil {
 		return nil, err
+	}
+	if len(rows) == 0 {
+		return nil, nil
 	}
 	out := make([]bench.UnionRow, len(rows))
 	for i, r := range rows {
