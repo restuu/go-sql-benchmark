@@ -12,7 +12,7 @@ import (
 
 func TestRegistryHasCoreLibraries(t *testing.T) {
 	// Arrange
-	want := []string{"database_sql", "ent", "gorm", "jet", "sqlc", "sqlx"}
+	want := []string{"beego", "bun", "database_sql", "ent", "gorm", "gorm_gen", "jet", "pgx", "pgx_pool", "pop", "rel", "sqlboiler", "sqlc", "sqlx", "xorm"}
 
 	// Act
 	got := registryNames()

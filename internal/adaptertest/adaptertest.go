@@ -23,6 +23,9 @@ const (
 	// unreachableDSN points at a closed port; connect_timeout keeps the failing Init fast.
 	unreachableDSN = "postgres://postgres:bench@127.0.0.1:1/bench?sslmode=disable&connect_timeout=2"
 	contractPool   = 4
+
+	// deleteMissingCase is skipped for an adapter that implements bench.DeleteCountUnreported.
+	deleteMissingCase = "delete of a missing id affects nothing"
 )
 
 // RunContract runs the shared adapter checks. Scenarios listed in unsupported must return
@@ -78,18 +81,21 @@ func initialised(t *testing.T, dsn string, newAdapter func() bench.Adapter) (ben
 	return a, store, ctx
 }
 
+// callCase is one row of the runCalls table.
+type callCase struct {
+	name     string
+	scenario bench.Scenario
+	call     func() (int, error)
+	want     int
+}
+
 func runCalls(t *testing.T, dsn string, newAdapter func() bench.Adapter, unsupported []bench.Scenario) {
 	a, store, ctx := initialised(t, dsn, newAdapter)
 	deletable, err := store.InsertDeletable(ctx, 1)
 	if err != nil {
 		t.Fatalf("InsertDeletable: %v", err)
 	}
-	tests := []struct {
-		name     string
-		scenario bench.Scenario
-		call     func() (int, error)
-		want     int
-	}{
+	tests := []callCase{
 		{"insert", bench.ScenarioInsert, func() (int, error) { return a.Insert(ctx, bench.NewModel()) }, 1},
 		{"update", bench.ScenarioUpdate, func() (int, error) { return a.Update(ctx, 5, bench.NewModel()) }, 1},
 		{"delete", bench.ScenarioDelete, func() (int, error) { return a.Delete(ctx, deletable[0]) }, 1},
@@ -97,9 +103,12 @@ func runCalls(t *testing.T, dsn string, newAdapter func() bench.Adapter, unsuppo
 		{"join", bench.ScenarioJoin, func() (int, error) { return a.Join(ctx, 7) }, 10},
 		{"union", bench.ScenarioUnion, func() (int, error) { return a.Union(ctx, "city 3") }, 40},
 		{"update of a missing id affects nothing", bench.ScenarioUpdate, func() (int, error) { return a.Update(ctx, missingID, bench.NewModel()) }, 0},
-		{"delete of a missing id affects nothing", bench.ScenarioDelete, func() (int, error) { return a.Delete(ctx, missingID) }, 0},
+		{deleteMissingCase, bench.ScenarioDelete, func() (int, error) { return a.Delete(ctx, missingID) }, 0},
 		{"join of an unknown customer is empty", bench.ScenarioJoin, func() (int, error) { return a.Join(ctx, missingID) }, 0},
 		{"union of an unknown city is empty", bench.ScenarioUnion, func() (int, error) { return a.Union(ctx, "nowhere") }, 0},
+	}
+	if _, ok := a.(bench.DeleteCountUnreported); ok {
+		tests = slices.DeleteFunc(tests, func(tt callCase) bool { return tt.name == deleteMissingCase })
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -121,6 +130,21 @@ func runCalls(t *testing.T, dsn string, newAdapter func() bench.Adapter, unsuppo
 			}
 			if got != tt.want {
 				t.Fatalf("rows = %d, want %d", got, tt.want)
+			}
+		})
+	}
+	if _, ok := a.(bench.DeleteCountUnreported); ok {
+		// The reported count is not checked for this adapter, so check the effect instead.
+		t.Run("delete removes the row", func(t *testing.T) {
+			// Arrange
+			id := deletable[0]
+
+			// Act
+			_, err := a.Select(ctx, id)
+
+			// Assert
+			if err == nil {
+				t.Fatalf("Select(%d) after Delete = nil, want error: the row is still there", id)
 			}
 		})
 	}

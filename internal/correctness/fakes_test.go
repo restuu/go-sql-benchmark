@@ -205,3 +205,16 @@ func (f *fakeLib) ReadUnion(_ context.Context, city string) ([]bench.UnionRow, e
 
 // plainAdapter hides the Verifier methods of the adapter it wraps.
 type plainAdapter struct{ bench.Adapter }
+
+// alwaysOneDelete reports one row for every delete, as an adapter whose library cannot count would.
+type alwaysOneDelete struct{ *fakeLib }
+
+func (a alwaysOneDelete) Delete(ctx context.Context, id int) (int, error) {
+	_, _ = a.fakeLib.Delete(ctx, id)
+	return 1, nil
+}
+
+// countlessDelete is alwaysOneDelete that declares the limitation, like pop.
+type countlessDelete struct{ alwaysOneDelete }
+
+func (countlessDelete) DeleteCountUnreported() {}

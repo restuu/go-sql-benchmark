@@ -36,6 +36,15 @@ func TestCheck(t *testing.T) {
 		{"update of a missing id inserts", func(w *world) []bench.Adapter {
 			return []bench.Adapter{&fakeLib{w: w, name: "upserter", upsertOnUpdate: true}}
 		}, []string{"upserter", "update of a missing id"}},
+		{"delete counting 1 for a missing id without declaring it", func(w *world) []bench.Adapter {
+			return []bench.Adapter{alwaysOneDelete{&fakeLib{w: w, name: "overcounter"}}}
+		}, []string{"overcounter", "second delete"}},
+		{"declared countless delete passes", func(w *world) []bench.Adapter {
+			return []bench.Adapter{countlessDelete{alwaysOneDelete{&fakeLib{w: w, name: "countless"}}}}
+		}, nil},
+		{"declared countless delete that keeps the row still fails", func(w *world) []bench.Adapter {
+			return []bench.Adapter{countlessDelete{alwaysOneDelete{&fakeLib{w: w, name: "countkeeper", keepOnDelete: true}}}}
+		}, []string{"countkeeper", "still present"}},
 		{"adapter without a verifier", func(w *world) []bench.Adapter {
 			return []bench.Adapter{plainAdapter{&fakeLib{w: w, name: "plain"}}}
 		}, []string{"plain", "bench.Verifier"}},

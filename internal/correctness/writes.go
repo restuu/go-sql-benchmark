@@ -61,6 +61,9 @@ func checkDelete(ctx context.Context, store runner.Store, ref bench.Verifier, s 
 	case !errors.Is(err, sql.ErrNoRows):
 		msgs = append(msgs, fmt.Sprintf("%s: delete: read back id %d: %v", name, ids[0], err))
 	}
+	if _, ok := s.(bench.DeleteCountUnreported); ok {
+		return msgs // it cannot tell a missing id from a deleted one
+	}
 	n, err = s.Delete(ctx, ids[0])
 	return append(msgs, expectRows(name, "second delete", n, err, 0)...)
 }

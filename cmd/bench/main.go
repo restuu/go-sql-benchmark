@@ -14,12 +14,20 @@ import (
 	"slices"
 	"time"
 
+	"github.com/restuu/go-sql-benchmark/internal/adapters/beego"
+	"github.com/restuu/go-sql-benchmark/internal/adapters/bun"
 	"github.com/restuu/go-sql-benchmark/internal/adapters/databasesql"
 	"github.com/restuu/go-sql-benchmark/internal/adapters/ent"
 	"github.com/restuu/go-sql-benchmark/internal/adapters/gorm"
+	"github.com/restuu/go-sql-benchmark/internal/adapters/gormgen"
 	"github.com/restuu/go-sql-benchmark/internal/adapters/jet"
+	"github.com/restuu/go-sql-benchmark/internal/adapters/pgx"
+	"github.com/restuu/go-sql-benchmark/internal/adapters/pop"
+	"github.com/restuu/go-sql-benchmark/internal/adapters/rel"
+	"github.com/restuu/go-sql-benchmark/internal/adapters/sqlboiler"
 	"github.com/restuu/go-sql-benchmark/internal/adapters/sqlc"
 	"github.com/restuu/go-sql-benchmark/internal/adapters/sqlx"
+	"github.com/restuu/go-sql-benchmark/internal/adapters/xorm"
 	"github.com/restuu/go-sql-benchmark/internal/bench"
 	"github.com/restuu/go-sql-benchmark/internal/correctness"
 	"github.com/restuu/go-sql-benchmark/internal/result"
@@ -40,11 +48,20 @@ const (
 
 // registry maps -libs names to adapter constructors; new adapters register here.
 var registry = map[string]func() bench.Adapter{
+	"beego":        beego.New,
+	"bun":          bun.New,
 	"database_sql": databasesql.New,
 	"ent":          ent.New,
 	"gorm":         gorm.New,
+	"gorm_gen":     gormgen.New,
 	"jet":          jet.New,
+	"pgx":          pgx.New,
+	"pgx_pool":     pgx.NewPool,
+	"pop":          pop.New,
+	"rel":          rel.New,
+	"sqlboiler":    sqlboiler.New,
 	"sqlc":         sqlc.New,
+	"xorm":         xorm.New,
 	"sqlx":         sqlx.New,
 }
 
@@ -52,11 +69,18 @@ var registry = map[string]func() bench.Adapter{
 // version is read from the binary. sqlc is generated code with no runtime module (its generator
 // version is pinned in tools/go.mod).
 var libraryModules = map[string]string{
-	"pgx":  "github.com/jackc/pgx/v5",
-	"sqlx": "github.com/jmoiron/sqlx",
-	"gorm": "gorm.io/gorm",
-	"ent":  "entgo.io/ent",
-	"jet":  "github.com/go-jet/jet/v2",
+	"pgx":       "github.com/jackc/pgx/v5",
+	"bun":       "github.com/uptrace/bun",
+	"beego":     "github.com/beego/beego/v2",
+	"pop":       "github.com/gobuffalo/pop/v6",
+	"rel":       "github.com/go-rel/rel",
+	"sqlboiler": "github.com/aarondl/sqlboiler/v4",
+	"xorm":      "xorm.io/xorm",
+	"gorm_gen":  "gorm.io/gen",
+	"sqlx":      "github.com/jmoiron/sqlx",
+	"gorm":      "gorm.io/gorm",
+	"ent":       "entgo.io/ent",
+	"jet":       "github.com/go-jet/jet/v2",
 }
 
 func main() {
