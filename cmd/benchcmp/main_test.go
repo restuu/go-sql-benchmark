@@ -64,6 +64,7 @@ func TestRun(t *testing.T) {
 	base := writeRun(t, dir, "a.json", 1_000_000)
 	near := writeRun(t, dir, "near.json", 1_050_000)
 	far := writeRun(t, dir, "far.json", 1_500_000)
+	farther := writeRun(t, dir, "farther.json", 2_000_000)
 	tests := []struct {
 		name     string
 		args     []string
@@ -71,13 +72,17 @@ func TestRun(t *testing.T) {
 		wantOut  string
 	}{
 		{"within default tolerance", []string{"-rubric", rubric, base, near}, exitOK, "5.0%"},
-		{"beyond default tolerance", []string{"-rubric", rubric, base, far}, exitExceeded, "EXCEEDS"},
-		{"custom tolerance allows it", []string{"-rubric", rubric, "-tolerance", "0.6", base, far}, exitOK, "50.0%"},
+		{"low profile has its own looser default", []string{"-rubric", rubric, base, far}, exitOK, "50.0%"},
+		{"beyond the low profile default", []string{"-rubric", rubric, base, farther}, exitExceeded, "EXCEEDS"},
+		{"custom low tolerance rejects it", []string{"-rubric", rubric, "-tolerance-low", "0.2", base, far}, exitExceeded, "EXCEEDS"},
+		{"custom low tolerance allows it", []string{"-rubric", rubric, "-tolerance-low", "1.5", base, farther}, exitOK, "100.0%"},
+		{"tolerance does not apply to the low profile", []string{"-rubric", rubric, "-tolerance", "0.01", base, far}, exitOK, "50.0%"},
 		{"one argument", []string{"-rubric", rubric, base}, exitUsage, ""},
 		{"missing file", []string{"-rubric", rubric, base, filepath.Join(dir, "none.json")}, exitUsage, ""},
 		{"nan tolerance", []string{"-rubric", rubric, "-tolerance", "NaN", base, near}, exitUsage, ""},
 		{"missing rubric", []string{"-rubric", filepath.Join(dir, "none.json"), base, near}, exitUsage, ""},
 		{"malformed rubric", []string{"-rubric", writeFile(t, dir, "bad.json", "{"), base, near}, exitUsage, ""},
+		{"negative low tolerance", []string{"-rubric", rubric, "-tolerance-low", "-1", base, near}, exitUsage, ""},
 		{"negative tolerance", []string{"-rubric", rubric, "-tolerance", "-1", base, near}, exitUsage, ""},
 	}
 	for _, tt := range tests {

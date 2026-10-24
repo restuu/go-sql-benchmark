@@ -235,7 +235,7 @@ func TestCompareP95(t *testing.T) {
 			// (runs from tt)
 
 			// Act
-			devs := CompareP95(tt.a, tt.b, tt.tolerance)
+			devs := CompareP95(tt.a, tt.b, func(string) float64 { return tt.tolerance })
 
 			// Assert
 			exceeded := false
@@ -259,7 +259,7 @@ func TestCompareP95Delta(t *testing.T) {
 	a, b := runWithP95(1_000_000), runWithP95(1_150_000)
 
 	// Act
-	devs := CompareP95(a, b, 0.10)
+	devs := CompareP95(a, b, func(string) float64 { return 0.10 })
 
 	// Assert
 	if len(devs) != 1 {

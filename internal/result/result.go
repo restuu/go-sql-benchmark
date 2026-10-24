@@ -266,9 +266,10 @@ type Deviation struct {
 	Note                       string // set when the cell could not be compared
 }
 
-// CompareP95 compares the median p95 of every cell present in either run. A cell that is na in
-// both runs is skipped; a cell missing or differing in status is reported with Exceeds set.
-func CompareP95(a, b Run, tolerance float64) []Deviation {
+// CompareP95 compares the median p95 of every cell present in either run; tolerance gives the
+// largest accepted relative difference for a profile. A cell that is na in both runs is skipped; a
+// cell missing or differing in status is reported with Exceeds set.
+func CompareP95(a, b Run, tolerance func(profile string) float64) []Deviation {
 	bByKey := make(map[cellKey]Cell, len(b.Cells))
 	for _, c := range b.Cells {
 		bByKey[c.key()] = c
@@ -278,7 +279,7 @@ func CompareP95(a, b Run, tolerance float64) []Deviation {
 	for _, ca := range a.Cells {
 		matched[ca.key()] = true
 		cb, ok := bByKey[ca.key()]
-		if d, report := compareCell(ca, cb, ok, tolerance); report {
+		if d, report := compareCell(ca, cb, ok, tolerance(ca.Profile)); report {
 			devs = append(devs, d)
 		}
 	}

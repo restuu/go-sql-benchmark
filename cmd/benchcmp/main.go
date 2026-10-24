@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/restuu/go-sql-benchmark/internal/bench"
 	"github.com/restuu/go-sql-benchmark/internal/report"
 	"github.com/restuu/go-sql-benchmark/internal/result"
 )
@@ -17,6 +18,7 @@ const (
 	exitExceeded   = 1
 	exitUsage      = 2
 	defaultTol     = 0.10
+	defaultLowTol  = 0.60
 	defaultGap     = 0.02
 	defaultRubric  = "report/rubric.json"
 	percentDisplay = 100
@@ -33,13 +35,14 @@ func run(args []string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("benchcmp", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	tolerance := fs.Float64("tolerance", defaultTol, "maximum relative p95 difference per cell")
+	toleranceLow := fs.Float64("tolerance-low", defaultLowTol, "same, for the low profile: its calls are paced and a few ms long, so its p95 is noisier")
 	scoreGap := fs.Float64("score-gap", defaultGap, "scores closer than this are tied: their order may differ between the runs")
 	rubricPath := fs.String("rubric", defaultRubric, "rubric file whose weights rank the libraries")
 	if err := fs.Parse(args); err != nil {
 		return exitUsage
 	}
-	if fs.NArg() != 2 || !(*tolerance >= 0) || !(*scoreGap >= 0) { // also rejects NaN
-		fmt.Fprintln(stderr, "usage: benchcmp [-tolerance 0.10] [-score-gap 0.02] [-rubric report/rubric.json] a.json b.json (tolerance and score-gap must be >= 0)")
+	if fs.NArg() != 2 || !(*tolerance >= 0) || !(*toleranceLow >= 0) || !(*scoreGap >= 0) { // also rejects NaN
+		fmt.Fprintln(stderr, "usage: benchcmp [-tolerance 0.10] [-tolerance-low 0.60] [-score-gap 0.02] [-rubric report/rubric.json] a.json b.json (tolerances and score-gap must be >= 0)")
 		return exitUsage
 	}
 	a, err := result.Load(fs.Arg(0))
@@ -60,7 +63,12 @@ func run(args []string, stdout, stderr io.Writer) int {
 	}
 
 	code := exitOK
-	for _, d := range result.CompareP95(a, b, *tolerance) {
+	for _, d := range result.CompareP95(a, b, func(profile string) float64 {
+		if profile == bench.ProfileLow {
+			return *toleranceLow
+		}
+		return *tolerance
+	}) {
 		fmt.Fprintln(stdout, format(d))
 		if d.Exceeds {
 			code = exitExceeded

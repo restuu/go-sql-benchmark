@@ -8,6 +8,7 @@ HOST_ARCH := $(shell uname -m | sed -e 's/x86_64/amd64/' -e 's/aarch64/arm64/')
 
 BENCH_ARGS ?=
 BENCH_TOL  ?= 0.20
+BENCH_TOL_LOW ?= 0.60
 # macOS idle sleep stalls a run; no-op elsewhere.
 KEEP_AWAKE := $(shell command -v caffeinate >/dev/null 2>&1 && echo 'caffeinate -i')
 
@@ -51,7 +52,7 @@ bench: arch-check db-up
 	$(KEEP_AWAKE) go run ./cmd/bench $(BENCH_ARGS)
 
 bench-cmp:
-	go run ./cmd/benchcmp -tolerance $(BENCH_TOL) $(A) $(B)
+	go run ./cmd/benchcmp -tolerance $(BENCH_TOL) -tolerance-low $(BENCH_TOL_LOW) $(A) $(B)
 
 report:
 	go run ./cmd/report -in $(IN) $(if $(OUT),-out $(OUT) -details-out $(or $(DETAILS),$(dir $(OUT))REPORT.md))
