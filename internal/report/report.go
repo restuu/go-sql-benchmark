@@ -32,6 +32,10 @@ func Render(run result.Run, rb Rubric) (string, error) {
 	writeTables(&sb, run, rb, r)
 	writeTop(&sb, rb, r)
 	writeProsCons(&sb, rb, r)
+	writeFlexibility(&sb, rb, r)
+	writeEaseOfUse(&sb, rb, r)
+	writeLearningCurve(&sb, rb, r)
+	writeCommunity(&sb, rb, r)
 	return sb.String(), nil
 }
 

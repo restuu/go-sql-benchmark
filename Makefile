@@ -11,7 +11,7 @@ BENCH_TOL  ?= 0.20
 # macOS idle sleep stalls a run (see .claude/PRPs/reports/p95-stability-report.md, E6); no-op elsewhere.
 KEEP_AWAKE := $(shell command -v caffeinate >/dev/null 2>&1 && echo 'caffeinate -i')
 
-.PHONY: arch-check db-up db-down db-reset db-seed db-check build vet test test-db bench bench-cmp report gen gen-sqlc gen-ent gen-jet gen-check
+.PHONY: arch-check db-up db-down db-reset db-seed db-check build vet test test-db bench bench-cmp report gen gen-sqlc gen-ent gen-jet gen-sqlboiler gen-gormgen gen-check
 
 arch-check:
 	@if [ "$(GO_ARCH)" != "$(HOST_ARCH)" ]; then \
@@ -57,9 +57,10 @@ report:
 
 # Code generators are pinned in tools/go.mod (tool directives) so the main go.mod stays free of them.
 GOTOOL   := go tool -modfile=tools/go.mod
-GEN_DIRS := internal/adapters/sqlc/db internal/adapters/ent/entgen internal/adapters/jet/gen
+GORMGEN_DIRS := internal/adapters/gormgen/entity internal/adapters/gormgen/query
+GEN_DIRS := internal/adapters/sqlc/db internal/adapters/ent/entgen internal/adapters/jet/gen internal/adapters/sqlboiler/models internal/adapters/gormgen/entity internal/adapters/gormgen/query
 
-gen: gen-sqlc gen-ent gen-jet
+gen: gen-sqlc gen-ent gen-jet gen-sqlboiler gen-gormgen
 
 gen-sqlc:
 	$(GOTOOL) sqlc generate -f internal/adapters/sqlc/sqlc.yaml
@@ -70,6 +71,23 @@ gen-ent:
 # jet reads the live schema, so the database must be up.
 gen-jet: db-up
 	$(GOTOOL) jet -source=postgres -dsn='$(BENCH_DSN)' -path=internal/adapters/jet/gen
+
+# sqlboiler also reads the live schema. It finds its driver by looking for sqlboiler-psql on PATH,
+# so the pinned driver is linked into a temporary directory first.
+gen-sqlboiler: db-up
+	@bin=$$(mktemp -d) && trap 'rm -rf "$$bin"' EXIT && \
+	ln -s "$$($(GOTOOL) -n sqlboiler-psql)" "$$bin/sqlboiler-psql" && \
+	PATH="$$bin:$$PATH" PSQL_HOST=127.0.0.1 PSQL_PORT='$(BENCH_PG_PORT)' PSQL_USER=postgres PSQL_PASS='$(BENCH_PG_PASSWORD)' \
+	PSQL_DBNAME=bench PSQL_SSLMODE=disable \
+	$(GOTOOL) sqlboiler psql --output internal/adapters/sqlboiler/models --pkgname models --no-tests --wipe
+
+# gorm/gen has no CLI, so internal/adapters/gormgen/generate is a small generator program (excluded from
+# the build, pinned by go.mod like the generated code's own imports); it reads the live schema too.
+# The old output is cleared first so renamed tables leave no stale files, and put back if generation fails.
+gen-gormgen: db-up
+	@bak=$$(mktemp -d) && trap 'rm -rf "$$bak"' EXIT && \
+	cp -R $(GORMGEN_DIRS) "$$bak" && rm -rf $(GORMGEN_DIRS) && \
+	{ go run internal/adapters/gormgen/generate/main.go || { rm -rf $(GORMGEN_DIRS); cp -R "$$bak"/* internal/adapters/gormgen/; echo "gen-gormgen failed: previous output restored"; exit 1; }; }
 
 # Fails if regenerating changes any generated file in the working tree (commit the result to pin it).
 gen-check:

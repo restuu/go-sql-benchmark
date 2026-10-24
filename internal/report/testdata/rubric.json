@@ -1,15 +1,165 @@
 {
-  "weights": {"p95": 1, "bytes_per_op": 1, "cpu_ns_per_op": 1},
+  "weights": {
+    "p95": 1,
+    "bytes_per_op": 1,
+    "cpu_ns_per_op": 1
+  },
   "methodology": [
     "Fixture methodology line one.",
     "Fixture methodology line two with a | pipe."
   ],
+  "community_checked": "2026-10-24",
   "libraries": [
-    {"name": "database_sql", "display": "database/sql", "version_used": "standard library", "pros": ["Reference implementation."], "cons": ["Hand-written scanning."]},
-    {"name": "ent", "display": "ent", "module": "ent", "version_used": "v0.14.6", "pros": ["Typed graph API."], "cons": []},
-    {"name": "sqlx", "display": "sqlx", "module": "sqlx", "label": "no updates since 2024", "version_used": "v1.4.0", "pros": [], "cons": ["Unmaintained."]}
+    {
+      "name": "database_sql",
+      "display": "database/sql",
+      "version_used": "standard library",
+      "pros": [
+        "Reference implementation."
+      ],
+      "cons": [
+        "Hand-written scanning."
+      ],
+      "flexibility": {
+        "capabilities": {
+          "optional_filters": "native",
+          "dynamic_ordering": "native",
+          "conditional_join": "native",
+          "dynamic_projection": "native",
+          "in_list_batch": "partial",
+          "dynamic_pagination": "native"
+        },
+        "notes": [
+          "Dynamic SQL is built by hand with a | pipe."
+        ]
+      },
+      "ease_of_use": {
+        "criteria": {
+          "setup_effort": "good",
+          "query_writing": "poor",
+          "type_safety": "poor",
+          "debugging": "good"
+        },
+        "notes": [
+          "Ease note for database/sql with a | pipe."
+        ]
+      },
+      "learning_curve": {
+        "level": "gentle",
+        "notes": [
+          "Curve note for database/sql."
+        ]
+      },
+      "community": {
+        "repo": "golang/go",
+        "stars": 130000,
+        "open_issues": 9000,
+        "last_release": "2026-10-01",
+        "last_commit": "2026-10-23",
+        "note": "Counts cover the whole Go project."
+      }
+    },
+    {
+      "name": "ent",
+      "display": "ent",
+      "module": "ent",
+      "version_used": "v0.14.6",
+      "pros": [
+        "Typed graph API."
+      ],
+      "cons": [],
+      "flexibility": {
+        "capabilities": {
+          "optional_filters": "native",
+          "dynamic_ordering": "native",
+          "conditional_join": "native",
+          "dynamic_projection": "partial",
+          "in_list_batch": "native",
+          "dynamic_pagination": "native"
+        },
+        "notes": [
+          "Predicates compose into a slice."
+        ]
+      },
+      "ease_of_use": {
+        "criteria": {
+          "setup_effort": "poor",
+          "query_writing": "good",
+          "type_safety": "good",
+          "debugging": "fair"
+        },
+        "notes": [
+          "Ease note for ent with a | pipe."
+        ]
+      },
+      "learning_curve": {
+        "level": "steep",
+        "notes": [
+          "Curve note for ent."
+        ]
+      },
+      "community": {
+        "repo": "ent/ent",
+        "stars": 17000,
+        "open_issues": 400,
+        "last_release": "2026-08-01",
+        "last_commit": "2026-10-20"
+      }
+    },
+    {
+      "name": "sqlx",
+      "display": "sqlx",
+      "module": "sqlx",
+      "label": "no updates since 2024",
+      "version_used": "v1.4.0",
+      "pros": [],
+      "cons": [
+        "Unmaintained."
+      ],
+      "flexibility": {
+        "capabilities": {
+          "optional_filters": "raw_sql",
+          "dynamic_ordering": "raw_sql",
+          "conditional_join": "raw_sql",
+          "dynamic_projection": "raw_sql",
+          "in_list_batch": "native",
+          "dynamic_pagination": "static_only"
+        },
+        "notes": [
+          "unverified: named queries only."
+        ]
+      },
+      "ease_of_use": {
+        "criteria": {
+          "setup_effort": "good",
+          "query_writing": "fair",
+          "type_safety": "poor",
+          "debugging": "good"
+        },
+        "notes": [
+          "Ease note for sqlx with a | pipe."
+        ]
+      },
+      "learning_curve": {
+        "level": "gentle",
+        "notes": [
+          "Curve note for sqlx."
+        ]
+      },
+      "community": {
+        "repo": "jmoiron/sqlx",
+        "stars": 16000,
+        "open_issues": 300,
+        "last_release": "2024-05-01",
+        "last_commit": "2024-06-01"
+      }
+    }
   ],
   "cell_notes": [
-    {"library": "ent", "scenario": "join", "note": "ent JOIN is edge eager-loading: two queries, not one SQL JOIN."}
+    {
+      "library": "ent",
+      "scenario": "join",
+      "note": "ent JOIN is edge eager-loading: two queries, not one SQL JOIN."
+    }
   ]
 }

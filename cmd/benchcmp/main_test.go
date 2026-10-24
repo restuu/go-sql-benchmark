@@ -38,7 +38,7 @@ func writeRun(t *testing.T, dir, name string, p95 int64, libraries ...string) st
 func writeRubric(t *testing.T, dir string) string {
 	t.Helper()
 	path := filepath.Join(dir, "rubric.json")
-	if err := os.WriteFile(path, []byte(`{"weights":{"p95":1,"bytes_per_op":1,"cpu_ns_per_op":1}}`), 0o600); err != nil {
+	if err := os.WriteFile(path, []byte(`{"weights":{"p95":1,"bytes_per_op":1,"cpu_ns_per_op":1},"community_checked":"2026-10-24"}`), 0o600); err != nil {
 		t.Fatalf("write rubric: %v", err)
 	}
 	return path

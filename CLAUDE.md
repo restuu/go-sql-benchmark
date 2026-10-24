@@ -1,6 +1,6 @@
 # go-sql-benchmark
 
-Benchmarks Go SQL libraries (database/sql, sqlc, sqlx, gorm, ent, go-jet, ...) against one seeded
+Benchmarks 15 Go SQL libraries (database/sql, sqlc, sqlx, gorm, ent, go-jet, beego, bun, pgx, pgx_pool, pop, rel, sqlboiler, gorm/gen, xorm) against one seeded
 Postgres 15. Numbers are only comparable on the same machine. Plan and PRD: `.claude/PRPs/`.
 
 ## Commands
@@ -10,7 +10,7 @@ Postgres 15. Numbers are only comparable on the same machine. Plan and PRD: `.cl
 - `make db-check` — verify Postgres major + row counts (`cmd/dbcheck`)
 - `make build | vet | test` — `test` strips `BENCH_DSN`, so DB integration tests skip
 - `make test-db` — brings the DB up and runs the `Integration` tests
-- `make gen | gen-sqlc | gen-ent | gen-jet` — regenerate committed sqlc/ent/jet code with tools pinned in `tools/go.mod` (`go tool -modfile=tools/go.mod`); `gen-jet` reads the live schema so it brings the DB up. `make gen-check` fails if regenerating changes any file.
+- `make gen | gen-sqlc | gen-ent | gen-jet | gen-sqlboiler | gen-gormgen` — regenerate committed sqlc/ent/jet/sqlboiler/gorm-gen code with tools pinned in `tools/go.mod` (`go tool -modfile=tools/go.mod`); `gen-jet`, `gen-sqlboiler` and `gen-gormgen` read the live schema so they bring the DB up. `gen-gormgen` runs `internal/adapters/gormgen/generate` (build tag `ignore`, so `make build`/`vet` skip it) and restores the old output if generation fails. `make gen-check` fails if regenerating changes any file.
 - `make bench BENCH_ARGS="..."` — arch check, DB up, run the matrix, write `results/run-<UTC>.json` (`go run ./cmd/bench -h` lists flags); reseeds the DB on success
 - `make bench-cmp A=results/a.json B=results/b.json` — per-cell p95 deviation plus top-5 library check (membership and order, weights from `report/rubric.json`); exit 1 beyond `BENCH_TOL` (make default 0.20; the binary's own `-tolerance` default is 0.10) or when the top 5 differ
 - `make report IN=results/x.json [OUT=README.md]` — render one result file plus `report/rubric.json` to Markdown (stdout without `OUT`); exit 1 if a cell or rubric entry is missing, 2 on usage/load errors. Same input gives byte-identical output.
@@ -25,7 +25,7 @@ Postgres 15. Numbers are only comparable on the same machine. Plan and PRD: `.cl
 ## Layout
 - `db/` — `schema.sql` + `seed.sql`, the single source of truth (sqlc reads it; jet generates from the live DB it seeds). Row counts live in `internal/seedcheck.ExpectedRows`; change both together.
 - `internal/` — packages; `cmd/` — binaries.
-- `internal/bench` adapter contract + profiles; `internal/runner` matrix, cells, stats, reseed store; `internal/result` JSON schema v1 (the Phase 4 contract); `internal/adapters/<lib>` one package per library (`databasesql`, `sqlx`, `sqlc`, `gorm`, `ent`, `jet`), registered in `cmd/bench` `registry`; generated code lives in `sqlc/db`, `ent/entgen` (from `ent/schema`) and `jet/gen`. `internal/adaptertest` is the shared integration contract each adapter test calls; `internal/correctness` is the cross-adapter value check. `internal/report` + `cmd/report` render a result file to Markdown (ranking, tables, reasons); `report/rubric.json` is the hand-written data (weights, methodology, pros/cons, cell notes) and must list every library in `registry`. `tools/` is a separate module holding the codegen tools.
+- `internal/bench` adapter contract + profiles; `internal/runner` matrix, cells, stats, reseed store; `internal/result` JSON schema v1 (the Phase 4 contract); `internal/adapters/<lib>` one package per library (`databasesql`, `sqlx`, `sqlc`, `gorm`, `ent`, `jet`, `beego`, `bun`, `pgx` (pgx + pgx_pool), `pop`, `rel`, `sqlboiler`, `gormgen` (library name `gorm_gen`), `xorm`), registered in `cmd/bench` `registry` and `libraryModules`; generated code lives in `sqlc/db`, `ent/entgen` (from `ent/schema`), `jet/gen`, `internal/adapters/sqlboiler/models` and `internal/adapters/gormgen/{entity,query}`. `internal/adaptertest` is the shared integration contract each adapter test calls; `internal/correctness` is the cross-adapter value check. `internal/report` + `cmd/report` render a result file to Markdown (ranking, tables, reasons); `report/rubric.json` is the hand-written data (weights, methodology, pros/cons, cell notes, and per library flexibility, ease of use, learning curve and community facts with `community_checked`) and must list every library in `registry`. The qualitative sections (`internal/report/flexibility.go`, `qualitative.go`) are never ranked and never reach the score, Top 5 or `benchcmp`; re-read the community facts with `gh api` and update `community_checked` when refreshing. `tools/` is a separate module holding the codegen tools.
 
 ## Runner
 - Adapter contract: one method per scenario returning rows affected/scanned (runner checks 1/1/1/1/10/40 and counts a mismatch as an error); reads must scan every selected column; no explicit `Prepare`; return `bench.ErrUnsupported` for a scenario the library cannot express (cell becomes `na`); `Init` must work again after `Close`.
@@ -36,7 +36,9 @@ Postgres 15. Numbers are only comparable on the same machine. Plan and PRD: `.cl
 - Write semantics every adapter must keep: UPDATE or DELETE of a missing id affects 0 rows (gorm `Save` and ent `UpdateOneID` would not), SELECT of a missing id errors, UPDATE writes every column including zero values.
 
 ## Adapter notes (carry into the Phase 4 report)
-- Native rule: a scenario is supported if the library's own query API (or, for SQL-first sqlc/sqlx, its SQL) expresses it; needing the raw-SQL escape hatch means `na`. Current `na`: gorm UNION, ent UNION. Every other cell is measured.
+- Native rule: a scenario is supported if the library's own query API (or, for SQL-first sqlc/sqlx/pgx, its SQL) expresses it; needing the raw-SQL escape hatch means `na`. Current `na`: UNION for gorm, ent, beego, pop, rel, sqlboiler and gorm_gen. Every other cell is measured.
+- Insert/Delete counts the library does not report: `bench.DeleteCountUnreported` (pop's Delete returns 1 for any error-free call; `adaptertest` and `correctness` skip the missing-id delete checks and `adaptertest` checks the row is gone instead). beego, pop, rel, sqlboiler and gorm_gen Insert also return 1 without a reported count; `correctness.Check` verifies the stored row.
+- Driver exceptions: `pgx`/`pgx_pool` use their own `pgxpool`, `pop` opens its own pool (same pgx stdlib driver); everything else takes the shared `*sql.DB`. zorm was dropped (reads `database/sql`'s private `lastcols`, which pgx stdlib's `RowsColumnScanner` leaves empty). `go.mod` pins `gorm.io/plugin/dbresolver` v1.6.2 because gorm.io/gen v0.3.29 requires v1.5.3, which does not compile against gorm v1.31.2.
 - **ent JOIN is edge eager-loading** (`WithCustomer()`): two queries (orders, then their customers), not one SQL JOIN. The report must say so next to ent's JOIN numbers.
 - gorm uses `SkipDefaultTransaction` (otherwise every write is wrapped in a transaction), `Joins("Customer")` for JOIN, `Updates` with an explicit column list.
 - Reads use each library's idiomatic result handling (sqlx/sqlc/gorm/ent/jet materialise rows; the reference scans into locals), so allocs/op differences include that.

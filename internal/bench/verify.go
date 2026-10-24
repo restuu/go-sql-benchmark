@@ -19,6 +19,11 @@ type JoinRow struct {
 // UnionRow is one row of the UNION scenario.
 type UnionRow struct{ Name, Email, City string }
 
+// DeleteCountUnreported is implemented by an adapter whose library's native delete cannot report
+// rows affected (pop). Its Delete returns 1 for any error-free call, so the checks that delete a
+// missing id and expect 0 do not apply to it. The row must still be gone after a delete.
+type DeleteCountUnreported interface{ DeleteCountUnreported() }
+
 // Verifier is implemented by adapters so the correctness check can compare the values their
 // queries return. The runner never calls it. A scenario the library cannot express returns
 // ErrUnsupported, as on Adapter.

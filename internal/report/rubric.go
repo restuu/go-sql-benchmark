@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"time"
 
 	"github.com/restuu/go-sql-benchmark/internal/bench"
 )
@@ -20,13 +21,17 @@ type Weights struct {
 
 // LibraryInfo is the hand-written description of one library.
 type LibraryInfo struct {
-	Name        string   `json:"name"`
-	Display     string   `json:"display"`
-	Module      string   `json:"module"`
-	Label       string   `json:"label"`
-	VersionUsed string   `json:"version_used"`
-	Pros        []string `json:"pros"`
-	Cons        []string `json:"cons"`
+	Name          string        `json:"name"`
+	Display       string        `json:"display"`
+	Module        string        `json:"module"`
+	Label         string        `json:"label"`
+	VersionUsed   string        `json:"version_used"`
+	Pros          []string      `json:"pros"`
+	Cons          []string      `json:"cons"`
+	Flexibility   Flexibility   `json:"flexibility"`
+	EaseOfUse     EaseOfUse     `json:"ease_of_use"`
+	LearningCurve LearningCurve `json:"learning_curve"`
+	Community     Community     `json:"community"`
 }
 
 // CellNote is a caveat printed next to one library's numbers for one scenario.
@@ -38,10 +43,12 @@ type CellNote struct {
 
 // Rubric holds every hand-written part of the report.
 type Rubric struct {
-	Weights     Weights       `json:"weights"`
-	Methodology []string      `json:"methodology"`
-	Libraries   []LibraryInfo `json:"libraries"`
-	CellNotes   []CellNote    `json:"cell_notes"`
+	Weights     Weights  `json:"weights"`
+	Methodology []string `json:"methodology"`
+	// CommunityChecked is the YYYY-MM-DD date the Community facts were read.
+	CommunityChecked string        `json:"community_checked"`
+	Libraries        []LibraryInfo `json:"libraries"`
+	CellNotes        []CellNote    `json:"cell_notes"`
 }
 
 // LoadRubric reads and validates a rubric file; unknown fields are an error so a typo cannot drop a note.
@@ -77,6 +84,9 @@ func (rb Rubric) validate() error {
 	if sum == 0 {
 		return fmt.Errorf("weights are all zero")
 	}
+	if _, err := time.Parse(dateLayout, rb.CommunityChecked); err != nil {
+		return fmt.Errorf("community_checked %q is not a YYYY-MM-DD date", rb.CommunityChecked)
+	}
 	libs := make(map[string]bool, len(rb.Libraries))
 	for _, l := range rb.Libraries {
 		switch {
@@ -86,6 +96,11 @@ func (rb Rubric) validate() error {
 			return fmt.Errorf("library %q has empty display", l.Name)
 		case libs[l.Name]:
 			return fmt.Errorf("duplicate library %q", l.Name)
+		}
+		for _, check := range []func(string) error{l.Flexibility.validate, l.EaseOfUse.validate, l.LearningCurve.validate, l.Community.validate} {
+			if err := check(l.Name); err != nil {
+				return err
+			}
 		}
 		libs[l.Name] = true
 	}

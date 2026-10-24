@@ -42,8 +42,8 @@ We'll know we're right when `make bench` on the reference machine regenerates th
 
 - [x] Weighting of the top-5 composite score: resolved 2026-10-24, equal-weight average of per-scenario ranks on p95, B/op, CPU time (`report/rubric.json` weights 1/1/1). A library with `na` cells is ranked on its remaining cells only; the report shows the ranked-cell count and the methodology says so.
 - [x] Stress parameters: resolved 2026-10-24, kept the defaults: 100 workers, unpaced, 2 s warm-up, 10 s window, 400k pre-inserted DELETE ids.
-- [ ] Do the 14 extra libraries share the same stress config as the core 6?
-- [ ] Is "last commit in 2026" a good-enough activity filter (dependency-bump pushes count)?
+- [x] Do the extra libraries share the same stress config as the core 6? Resolved 2026-10-24: yes, same profiles and stress parameters for all 15 libraries; a ranking comes from one run containing all of them.
+- [x] Is "last commit in 2026" a good-enough activity filter (dependency-bump pushes count)? Resolved 2026-10-24: no. The check uses the last commit on the default branch (not `pushed_at`, which counts bot branch churn) plus the last release. That dropped reform (no default-branch commit since 2022-01-24), go-pg, upper/db and gorm_prep.
 
 ---
 
@@ -137,7 +137,7 @@ Core 6 libraries x 6 scenarios x 2 profiles, JSON results, generated README with
 | 3 | Core adapters | sqlc, sqlx, gorm, ent, go-jet for all scenarios + cross-adapter correctness check | complete | with 4 | 2 | [plan](../plans/completed/core-adapters.plan.md), [report](../reports/core-adapters-report.md) |
 | 4 | Report generator | JSON -> README: tables, delta vs baseline, top-5 reasoning, pros/cons from data + rubric file | complete | with 3 | 2 | [plan](../plans/completed/report-generator.plan.md), [report](../reports/report-generator-report.md) |
 | 5 | Full run & publish | Full run on reference machine, stability check (2 runs), commit README | complete (stability gate not met, see report) | - | 3, 4 | [report](../reports/full-run-report.md) |
-| 6 | Extra libraries | 14 active-in-2026 libs, same scenarios, "n/a" handling | pending | - | 5 | - |
+| 6 | Extra libraries | 9 extras (15 libs total), same scenarios, "n/a" handling, qualitative measures | complete on branch `feat/extra-libraries`, uncommitted (one 15-lib run, stability not re-checked) | - | 5 | [report](../reports/extra-libraries-report.md) |
 
 ### Phase Details
 
@@ -167,9 +167,9 @@ Core 6 libraries x 6 scenarios x 2 profiles, JSON results, generated README with
 - **Success signal**: Success-metric table met.
 
 **Phase 6: Extra libraries**
-- **Goal**: Extend coverage to the 14 libraries active in 2026.
+- **Goal**: Extend coverage to the extra libraries active in 2026 (9 of the 14 first listed; see Decisions Log).
 - **Scope**: Adapters, codegen where required, rerun and regenerate README.
-- **Success signal**: Same completeness check as Phase 3 across all 20.
+- **Success signal**: Same completeness check as Phase 3 across all 15 libraries.
 
 ### Parallelism Notes
 
@@ -191,6 +191,8 @@ Phases 3 and 4 touch different packages (adapters vs report generator) and both 
 | Pros/cons | Computed metrics + hand-written rubric file | Fully generated | DX cannot be benchmarked |
 | Go version | 1.27.3, no toolchain line, native arm64 | Allow toolchain download | Rosetta/mismatched binary would corrupt CPU/alloc numbers |
 | Postgres | 15 in Docker | 14 (upstream) | Requirement |
+| Extras list (Phase 6) | 9 extras, 15 libraries: beego, bun, pgx, pgx_pool, pop, rel, sqlboiler, gorm/gen, xorm | The 14 first listed | Activity filter dropped reform, go-pg, upper/db, gorm_prep; zorm dropped by the user after it panicked on every read: it reads database/sql's private `lastcols` by reflection, which pgx stdlib's Go 1.27 `RowsColumnScanner` leaves empty (shim over pgx or lib/pq offered and declined) |
+| Qualitative measures | Hand-written flexibility, ease of use, learning curve; community support as dated repository facts; all outside the score and the Top 5 | Scored or derived community level | Judgement cannot be benchmarked and a score would hide the criteria; facts are checkable, thresholds are arguable |
 | Driver (database/sql-based libs) | `pgx/stdlib` (pgx v5) for database/sql, sqlc, sqlx, gorm, ent, go-jet | `lib/pq` (upstream default) | User decision; lib/pq is maintenance-only. One shared driver keeps differences attributable to the library. Native `pgx`/`pgx_pool` (Phase 6) stay separate entries. |
 
 ---

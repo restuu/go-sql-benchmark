@@ -198,3 +198,84 @@ Libraries with equal scores share a rank.
 
 - Typed graph API.
 
+## Flexibility (qualitative)
+
+Hand-written assessment of how each library handles dynamic queries, for example a search endpoint that adds conditions, joins or ordering only when a parameter is present. It is not part of the score, the Top 5 or the stability check, and no query composition was benchmarked.
+
+Levels: `native` = the library's own API composes it; `partial` = works with caveats (see notes); `raw SQL` = needs string SQL or an escape hatch; `static only` = the query is fixed at build time, so use several queries.
+
+| Library | optional filters | dynamic ordering | conditional join | dynamic projection | in-list / batch | dynamic pagination |
+|---|---|---|---|---|---|---|
+| database/sql | native | native | native | native | partial | native |
+| ent | native | native | native | partial | native | native |
+| sqlx | raw SQL | raw SQL | raw SQL | raw SQL | native | static only |
+
+**database/sql**
+
+- Dynamic SQL is built by hand with a | pipe.
+
+**ent**
+
+- Predicates compose into a slice.
+
+**sqlx**
+
+- unverified: named queries only.
+
+## Ease of use (qualitative)
+
+Hand-written judgement of the day-to-day work a library asks for. It is not part of the score, the Top 5 or the stability check. `good` = little work or checked early, `fair` = some manual work or checked only partly, `poor` = mostly manual or checked only at run time.
+
+Criteria: setup effort = codegen, config and boilerplate before the first query; query writing = code a typical query takes; type safety = how many mistakes the compiler catches; debugging = SQL visibility, error messages and logging hooks.
+
+| Library | setup effort | query writing | type safety | debugging |
+|---|---|---|---|---|
+| database/sql | good | poor | poor | good |
+| ent | poor | good | good | fair |
+| sqlx | good | fair | poor | good |
+
+**database/sql**
+
+- Ease note for database/sql with a | pipe.
+
+**ent**
+
+- Ease note for ent with a | pipe.
+
+**sqlx**
+
+- Ease note for sqlx with a | pipe.
+
+## Learning curve (qualitative)
+
+Hand-written judgement of how long a Go developer who knows SQL needs before writing production queries. It is not part of the score. `gentle` = SQL and the Go standard library are enough, `moderate` = one new API or tool to learn, `steep` = a framework, DSL or several tools to learn.
+
+| Library | Learning curve |
+|---|---|
+| database/sql | gentle |
+| ent | steep |
+| sqlx | gentle |
+
+**database/sql**
+
+- Curve note for database/sql.
+
+**ent**
+
+- Curve note for ent.
+
+**sqlx**
+
+- Curve note for sqlx.
+
+## Community support (facts)
+
+Repository facts read on 2026-10-24, with no rating and no part in the score; they go stale, so re-check before relying on them. Open issues exclude pull requests.
+
+| Library | Repository | Stars | Last release | Last commit | Open issues |
+|---|---|---|---|---|---|
+| database/sql | golang/go | 130000 | 2026-10-01 | 2026-10-23 | 9000 |
+| ent | ent/ent | 17000 | 2026-08-01 | 2026-10-20 | 400 |
+| sqlx | jmoiron/sqlx | 16000 | 2024-05-01 | 2024-06-01 | 300 |
+
+- **database/sql**: Counts cover the whole Go project.
