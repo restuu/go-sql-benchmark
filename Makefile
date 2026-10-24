@@ -8,7 +8,7 @@ HOST_ARCH := $(shell uname -m | sed -e 's/x86_64/amd64/' -e 's/aarch64/arm64/')
 
 BENCH_ARGS ?=
 BENCH_TOL  ?= 0.20
-# macOS idle sleep stalls a run (see .claude/PRPs/reports/p95-stability-report.md, E6); no-op elsewhere.
+# macOS idle sleep stalls a run; no-op elsewhere.
 KEEP_AWAKE := $(shell command -v caffeinate >/dev/null 2>&1 && echo 'caffeinate -i')
 
 .PHONY: arch-check db-up db-down db-reset db-seed db-check build vet test test-db bench bench-cmp report gen gen-sqlc gen-ent gen-jet gen-sqlboiler gen-gormgen gen-check

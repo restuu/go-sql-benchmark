@@ -10,7 +10,6 @@ import (
 	"database/sql"
 	"fmt"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/beego/beego/v2/client/orm"
@@ -58,15 +57,54 @@ func (*orderRow) TableName() string { return "orders" }
 // updateColumns lists every mutable column so a zero value (a false Right) is still written.
 var updateColumns = []string{"name", "title", "fax", "web", "age", "right", "counter"}
 
+// aliasName is registered once per process: Beego rejects a reused alias name, has no way to
+// remove one, and only needs the name to exist when it bootstraps the models. Each Init builds its
+// Ormer from its own *sql.DB through NewOrmWithDB, which does not look the alias up again.
+const aliasName = "bench_beego"
+
 var (
-	// registerModels runs once: Beego's model registry is global and closes at the first NewOrm.
-	registerModels sync.Once
-	// aliasSeq makes each Init register a fresh alias: Beego rejects a reused alias name and has
-	// no way to remove one.
-	aliasSeq atomic.Uint64
+	// registryMu guards the two flags. Beego's model registry is global and closes at the first NewOrm.
+	registryMu                        sync.Mutex
+	aliasRegistered, modelsRegistered bool
 )
 
+// ensureRegistered registers the alias, then the models, each once per process. Beego's
+// registrations are not idempotent, so each step has its own flag and a failed step is the only
+// one retried. A Beego panic or error is returned instead of escaping; the caller closes its *sql.DB.
+func ensureRegistered(sqlDB *sql.DB) error {
+	registryMu.Lock()
+	defer registryMu.Unlock()
+	if !aliasRegistered {
+		if err := recoverRegistration(func() error { return orm.AddAliasWthDB(aliasName, dialect, sqlDB) }); err != nil {
+			return err
+		}
+		aliasRegistered = true
+	}
+	if !modelsRegistered {
+		err := recoverRegistration(func() error {
+			orm.RegisterModel(new(modelRow), new(customerRow), new(orderRow))
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+		modelsRegistered = true
+	}
+	return nil
+}
+
+// recoverRegistration runs fn and turns a panic into an error.
+func recoverRegistration(fn func() error) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("panic: %v", r)
+		}
+	}()
+	return fn()
+}
+
 // Adapter implements bench.Adapter and bench.Verifier with Beego ORM. It is not safe to call Init concurrently.
+// A second Init closes the previous pool first.
 type Adapter struct {
 	sqlDB *sql.DB
 	orm   orm.Ormer
@@ -80,6 +118,7 @@ func New() bench.Adapter { return &Adapter{} }
 func (a *Adapter) Name() string { return "beego" }
 
 func (a *Adapter) Init(ctx context.Context, dsn string, pool bench.PoolConfig) error {
+	_ = a.Close() // a repeated Init must not leak the previous pool; its close error is not actionable
 	sqlDB, err := sql.Open("pgx", dsn)
 	if err != nil {
 		return fmt.Errorf("beego: open: %w", err)
@@ -90,13 +129,11 @@ func (a *Adapter) Init(ctx context.Context, dsn string, pool bench.PoolConfig) e
 		_ = sqlDB.Close()
 		return fmt.Errorf("beego: ping: %w", err)
 	}
-	registerModels.Do(func() { orm.RegisterModel(new(modelRow), new(customerRow), new(orderRow)) })
-	alias := fmt.Sprintf("bench_beego_%d", aliasSeq.Add(1))
-	if err := orm.AddAliasWthDB(alias, dialect, sqlDB); err != nil {
+	if err := ensureRegistered(sqlDB); err != nil {
 		_ = sqlDB.Close()
-		return fmt.Errorf("beego: register database: %w", err)
+		return fmt.Errorf("beego: register: %w", err)
 	}
-	o, err := orm.NewOrmWithDB(dialect, alias, sqlDB)
+	o, err := orm.NewOrmWithDB(dialect, aliasName, sqlDB)
 	if err != nil {
 		_ = sqlDB.Close()
 		return fmt.Errorf("beego: init: %w", err)

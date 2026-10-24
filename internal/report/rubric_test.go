@@ -45,10 +45,13 @@ func TestLoadRubric(t *testing.T) {
 		wantErr string
 	}{
 		{"valid", validRubric, ""},
+		{"honorable mention with a reason", strings.Replace(validRubric, `"module": "ent"`, `"module": "ent", "honorable_mention": "Postgres only"`, 1), ""},
+		{"honorable mention reason with a newline", strings.Replace(validRubric, `"module": "ent"`, `"module": "ent", "honorable_mention": "a\nb"`, 1), "honorable_mention"},
 		{"unknown field", strings.Replace(validRubric, `"methodology"`, `"methodolgy"`, 1), "unknown field"},
 		{"invalid json", `{`, "parse"},
 		{"duplicate library", strings.Replace(validRubric, `"name": "ent"`, `"name": "database_sql"`, 1), "duplicate library"},
 		{"empty name", strings.Replace(validRubric, `"name": "ent"`, `"name": ""`, 1), "empty name"},
+		{"display with a newline", strings.Replace(validRubric, `"display": "ent"`, `"display": "e\nnt"`, 1), "display contains a newline"},
 		{"empty display", strings.Replace(validRubric, `"display": "ent"`, `"display": ""`, 1), "empty display"},
 		{"negative weight", strings.Replace(validRubric, `"p95": 1`, `"p95": -1`, 1), "negative weight"},
 		{"weight sum overflows", strings.Replace(strings.Replace(validRubric, `"p95": 1`, `"p95": 1e308`, 1), `"cpu_ns_per_op": 2`, `"cpu_ns_per_op": 1e308`, 1), "overflows"},
@@ -76,6 +79,9 @@ func TestLoadRubric(t *testing.T) {
 		{"community negative stars", strings.Replace(validRubric, `"stars": 10`, `"stars": -1`, 1), "negative"},
 		{"community bad release date", strings.Replace(validRubric, `"2026-01-02"`, `"Jan 2"`, 1), "last_release"},
 		{"community bad commit date", strings.Replace(validRubric, `"2026-02-03"`, `"soon"`, 1), "last_commit"},
+		{"community release after the check date", strings.Replace(validRubric, `"2026-01-02"`, `"2026-10-25"`, 1), "last_release"},
+		{"community commit after the check date", strings.Replace(validRubric, `"2026-02-03"`, `"2026-11-01"`, 1), "last_commit"},
+		{"community dates on the check date", strings.Replace(strings.Replace(validRubric, `"2026-01-02"`, `"2026-10-24"`, 1), `"2026-02-03"`, `"2026-10-24"`, 1), ""},
 		{"community checked missing", strings.Replace(validRubric, `"community_checked": "2026-10-24"`, `"community_checked": ""`, 1), "community_checked"},
 		{"note unknown library", strings.Replace(validRubric, `"library": "ent", "scenario": "join", "note": "first"`, `"library": "nope", "scenario": "join", "note": "first"`, 1), "unknown library"},
 	}

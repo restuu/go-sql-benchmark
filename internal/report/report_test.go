@@ -110,11 +110,21 @@ func TestRenderContent(t *testing.T) {
 		"n/a (unsupported)",
 		"Fixture methodology line two with a | pipe.",
 		"baseline",
-		"judged on 10 of 12 cells",
+		"judged on 10 of 12 cases",
+		"**latency** (p95",
+		"**memory** (B/op",
+		"**CPU** (CPU ns/op",
+		"a **case** is one scenario under one load profile, written scenario/profile, for example join/low",
+		"3 libraries",
+		"weighted geometric mean, over every ranked case, of each metric's ratio to database/sql",
+		"ratio to database/sql (geometric mean over ranked cases, 1.00 = same, lower is better): p95",
 	} {
 		if !strings.Contains(got, want) {
 			t.Errorf("report does not contain %q", want)
 		}
+	}
+	if strings.Contains(strings.ToLower(got), " cell") {
+		t.Errorf("report text must say case, not cell")
 	}
 	top, pros := strings.Index(got, "## Top 5"), strings.Index(got, "## Pros and cons")
 	if top < 0 || pros < 0 || top > pros {
@@ -226,6 +236,9 @@ func TestRenderWithoutBaseline(t *testing.T) {
 	// Assert
 	if err != nil {
 		t.Fatalf("Render() error = %v", err)
+	}
+	if !strings.Contains(got, "Nothing could be ranked") {
+		t.Error("a run without database_sql has no ratios, the Top 5 should say so")
 	}
 	if strings.Contains(got, "| baseline |") {
 		t.Error("report shows a baseline row although database_sql is not in the run")
@@ -374,6 +387,7 @@ func TestRenderQualitativeSections(t *testing.T) {
 	}{
 		{"ease of use", "## Ease of use (qualitative)", []string{
 			"not part of the score",
+			"Levels for debugging: `good` = the SQL that ran",
 			"| Library | setup effort | query writing | type safety | debugging |",
 			"| ent | poor | good | good | fair |",
 			"Ease note for sqlx with a | pipe.",
@@ -479,5 +493,57 @@ func TestRenderQualitativeSubsetRun(t *testing.T) {
 		if !strings.Contains(body, "ent") {
 			t.Errorf("%s lost ent, which is in the run", heading)
 		}
+	}
+}
+
+func TestRenderHonorableMention(t *testing.T) {
+	// Arrange: sqlx moves out of the ranking pool
+	run, rb := loadFixture(t)
+	rb.Libraries = slices.Clone(rb.Libraries)
+	for i := range rb.Libraries {
+		if rb.Libraries[i].Name == "sqlx" {
+			rb.Libraries[i].HonorableMention = "Fixture reason: single-database driver."
+		}
+	}
+
+	// Act
+	got, err := Render(run, rb)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("Render() error = %v", err)
+	}
+	top, mention, pros := strings.Index(got, "## Top 5"), strings.Index(got, "## Honorable mention"), strings.Index(got, "## Pros and cons")
+	if top < 0 || mention < top || pros < mention {
+		t.Fatalf("want Top 5 (%d) < Honorable mention (%d) < Pros and cons (%d)", top, mention, pros)
+	}
+	topSection, mentionSection := got[top:mention], got[mention:pros]
+	if strings.Contains(topSection, "| sqlx |") || strings.Contains(topSection, "**sqlx**") {
+		t.Errorf("sqlx must not appear in the Top 5 section:\n%s", topSection)
+	}
+	if !strings.Contains(mentionSection, "| sqlx |") || !strings.Contains(mentionSection, "Fixture reason: single-database driver.") {
+		t.Errorf("honorable mention section lacks sqlx or its reason:\n%s", mentionSection)
+	}
+	if !strings.Contains(topSection, "| 1 | database/sql |") || !strings.Contains(topSection, "| 2 | ent |") {
+		t.Errorf("remaining libraries should rank 1 and 2:\n%s", topSection)
+	}
+	if strings.Count(got, "| sqlx |") < 2 { // environment table and result tables still list it
+		t.Errorf("sqlx must stay in the measured tables")
+	}
+}
+
+func TestRenderWithoutHonorableMention(t *testing.T) {
+	// Arrange
+	run, rb := loadFixture(t)
+
+	// Act
+	got, err := Render(run, rb)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("Render() error = %v", err)
+	}
+	if strings.Contains(got, "Honorable mention") {
+		t.Errorf("no library is a mention, the section must not render")
 	}
 }

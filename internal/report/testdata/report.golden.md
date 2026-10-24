@@ -2,6 +2,8 @@
 
 Run started 2026-10-21T04:58:02Z (UTC). Numbers are only comparable on the same machine.
 
+Compares 3 libraries on three measures: **latency** (p95, the time within which 95% of calls finished), **memory** (B/op, bytes allocated per operation) and **CPU** (CPU ns/op, CPU time per operation). Each library runs 6 scenarios under 2 load profiles; a **case** is one scenario under one load profile, written scenario/profile, for example join/low.
+
 ## Environment
 
 - OS/arch: darwin/arm64
@@ -18,7 +20,7 @@ Run started 2026-10-21T04:58:02Z (UTC). Numbers are only comparable on the same 
 
 ## Run configuration
 
-Repeats per cell: 2 (the median is reported). Seed: 1792558680234027000.
+Repeats per case: 2 (the median is reported). Seed: 1792558680234027000.
 
 | Profile | Workers | Pacing | Warm-up | Window | DELETE ids |
 |---|---:|---:|---:|---:|---:|
@@ -34,9 +36,9 @@ Reading the tables:
 
 - `p95 vs database/sql` is relative to the baseline's p95 in the same table; negative is faster.
 - `p95 spread` is (max - min) / median of the repeats' p95; `*` marks a spread above 10%.
-- `!` after a library means an error rate above 1%: the cell is shown but not ranked.
+- `!` after a library means an error rate above 1%: the case is shown but not ranked.
 - `[n]` points to the numbered note under the table.
-- `n/a (...)` means the library cannot express the scenario; the cell is not ranked.
+- `n/a (...)` means the library cannot express the scenario; the case is not ranked.
 
 ## Results
 
@@ -146,33 +148,30 @@ Reading the tables:
 
 ## Top 5
 
-Score is the mean rank over p95, B/op and CPU ns/op in every ranked cell, weighted (p95 1, B/op 1, CPU ns/op 1); lower is better.
+Score is the weighted geometric mean, over every ranked case, of each metric's ratio to database/sql (p95 1, B/op 1, CPU ns/op 1). 1.00 means the same as database/sql, 2.00 twice as much, 0.50 half; lower is better. A case needs a measured database/sql result to be scored.
 
 Libraries with equal scores share a rank.
 
-| Rank | Library | Score | Ranked cells |
+| Rank | Library | Score | Ranked cases |
 |---:|---|---:|---:|
-| 1 | database/sql | 1.47 | 12/12 |
-| 2 | sqlx | 1.75 | 12/12 |
-| 3 | ent | 2.73 | 10/12 |
+| 1 | database/sql | 1.00 | 12/12 |
+| 2 | sqlx | 1.22 | 12/12 |
+| 3 | ent | 1.90 | 10/12 |
 
 **database/sql**
 
-- fastest p95 in 5 of 12 ranked cells
-- weakest on p95: mean rank 1.7
-- slowest cell: insert/low (p95 rank 3 of 3)
+- the baseline: every ratio is 1.00 by definition
 
 **sqlx**
 
-- fastest p95 in 7 of 12 ranked cells
-- weakest on CPU ns/op: mean rank 2.2
-- slowest cell: delete/low (p95 rank 3 of 3)
+- ratio to database/sql (geometric mean over ranked cases, 1.00 = same, lower is better): p95 1.02x, B/op 1.45x, CPU ns/op 1.24x
+- slowest case: union/low (p95 1.37x database/sql)
 
 **ent**
 
-- weakest on B/op: mean rank 3.0
-- slowest cell: update/low (p95 rank 3 of 3)
-- judged on 10 of 12 cells
+- ratio to database/sql (geometric mean over ranked cases, 1.00 = same, lower is better): p95 1.35x, B/op 4.20x, CPU ns/op 1.22x
+- slowest case: delete/stress (p95 2.48x database/sql)
+- judged on 10 of 12 cases
 
 ## Pros and cons
 
@@ -224,7 +223,7 @@ Levels: `native` = the library's own API composes it; `partial` = works with cav
 
 ## Ease of use (qualitative)
 
-Hand-written judgement of the day-to-day work a library asks for. It is not part of the score, the Top 5 or the stability check. `good` = little work or checked early, `fair` = some manual work or checked only partly, `poor` = mostly manual or checked only at run time.
+Hand-written judgement of the day-to-day work a library asks for. It is not part of the score, the Top 5 or the stability check. Levels for setup effort, query writing and type safety: `good` = little work or checked early, `fair` = some manual work or checked only partly, `poor` = mostly manual or checked only at run time. Levels for debugging: `good` = the SQL that ran and its errors are visible with little setup, `fair` = visible after configuring logging or hooks, `poor` = hard to see what ran.
 
 Criteria: setup effort = codegen, config and boilerplate before the first query; query writing = code a typical query takes; type safety = how many mistakes the compiler catches; debugging = SQL visibility, error messages and logging hooks.
 

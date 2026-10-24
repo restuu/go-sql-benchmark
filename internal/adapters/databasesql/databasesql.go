@@ -27,6 +27,7 @@ SELECT name, email, city FROM suppliers WHERE city = $1`
 )
 
 // Adapter implements bench.Adapter with database/sql. It is not safe to call Init concurrently.
+// A second Init closes the previous pool first.
 type Adapter struct{ db *sql.DB }
 
 // New returns an uninitialised adapter.
@@ -35,6 +36,7 @@ func New() bench.Adapter { return &Adapter{} }
 func (a *Adapter) Name() string { return "database_sql" }
 
 func (a *Adapter) Init(ctx context.Context, dsn string, pool bench.PoolConfig) error {
+	_ = a.Close() // a repeated Init must not leak the previous pool; its close error is not actionable
 	db, err := sql.Open("pgx", dsn)
 	if err != nil {
 		return fmt.Errorf("databasesql: open: %w", err)

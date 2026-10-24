@@ -1,53 +1,64 @@
 package report
 
-import "fmt"
+import (
+	"fmt"
+	"math"
+	"strings"
+)
 
-const rankDecimals = 1
+const (
+	ratioDecimals = 2
+	// ratioScale turns a ratio into hundredths, the precision it is printed with.
+	ratioScale = 100
+)
 
-// reasonsFor builds up to four fixed-template sentences from a library's ranks; each is left out
-// when its input does not exist or says nothing (a library that never ranked below 1). The weakest
-// metric is picked among the metrics with a non-zero weight, the ones that count in the score.
+// reasonsFor builds up to three fixed-template sentences from a library's ratios to the baseline:
+// the mean ratio of each metric that counts in the score, the case with the highest p95 ratio when
+// it is above the baseline, and how many cases the score is based on.
 func reasonsFor(lib libScore, w Weights) []string {
 	if len(lib.cells) == 0 {
 		return nil
 	}
 	var out []string
-	if fastest := countFastest(lib.cells); fastest > 0 {
-		out = append(out, fmt.Sprintf("fastest p95 in %d of %d ranked cells", fastest, len(lib.cells)))
-	}
-	weights := w.perMetric()
-	weakest, found := metricCount, false
-	for m := range metricCount {
-		if weights[m] > 0 && (!found || lib.meanRank[m] > lib.meanRank[weakest]) {
-			weakest, found = m, true
+	if lib.library == baselineLibrary {
+		out = append(out, "the baseline: every ratio is 1.00 by definition")
+	} else {
+		out = append(out, meanRatioSentence(lib, w))
+		if worst := slowestCase(lib.cells); worstAboveBaseline(worst.ratios[metricP95]) {
+			out = append(out, fmt.Sprintf("slowest case: %s/%s (p95 %s database/sql)",
+				worst.scenario, worst.profile, ratioText(worst.ratios[metricP95])))
 		}
-	}
-	if found && lib.meanRank[weakest] > 1 {
-		out = append(out, fmt.Sprintf("weakest on %s: mean rank %s", metricLabels[weakest],
-			fixed(lib.meanRank[weakest], rankDecimals)))
-	}
-	worst := lib.cells[0]
-	for _, c := range lib.cells[1:] {
-		if c.ranks[metricP95] > worst.ranks[metricP95] {
-			worst = c
-		}
-	}
-	if worst.ranks[metricP95] > 1 {
-		out = append(out, fmt.Sprintf("slowest cell: %s/%s (p95 rank %d of %d)",
-			worst.scenario, worst.profile, worst.ranks[metricP95], worst.of))
 	}
 	if lib.ranked < lib.total {
-		out = append(out, fmt.Sprintf("judged on %d of %d cells", lib.ranked, lib.total))
+		out = append(out, fmt.Sprintf("judged on %d of %d cases", lib.ranked, lib.total))
 	}
 	return out
 }
 
-func countFastest(cells []cellRank) int {
-	n := 0
-	for _, c := range cells {
-		if c.ranks[metricP95] == 1 {
-			n++
+// meanRatioSentence lists the mean ratio of every metric with a non-zero weight, the ones that
+// count in the score.
+func meanRatioSentence(lib libScore, w Weights) string {
+	weights := w.perMetric()
+	var parts []string
+	for m := range metricCount {
+		if weights[m] > 0 {
+			parts = append(parts, metricLabels[m]+" "+ratioText(lib.meanRatio[m]))
 		}
 	}
-	return n
+	return "ratio to database/sql (geometric mean over ranked cases, 1.00 = same, lower is better): " + strings.Join(parts, ", ")
 }
+
+func slowestCase(cells []cellRatio) cellRatio {
+	worst := cells[0]
+	for _, c := range cells[1:] {
+		if c.ratios[metricP95] > worst.ratios[metricP95] {
+			worst = c
+		}
+	}
+	return worst
+}
+
+// worstAboveBaseline is true when the ratio still reads above 1.00 at the printed precision.
+func worstAboveBaseline(ratio float64) bool { return math.Round(ratio*ratioScale) > ratioScale }
+
+func ratioText(ratio float64) string { return fixed(ratio, ratioDecimals) + "x" }
