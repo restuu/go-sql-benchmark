@@ -8,7 +8,9 @@
     "B/op, allocs/op and CPU ns/op are deltas over the measured window divided by ops and include harness and GC cost.",
     "B/op and allocs/op also include each library's idiomatic result handling: sqlx, sqlc, gorm, ent and jet materialise rows, while the database/sql reference scans into locals, so part of the difference is the cost of that handling.",
     "A scenario counts as supported only when the library's own query API (or, for the SQL-first sqlc and sqlx, its SQL) expresses it; needing the raw-SQL escape hatch makes the cell n/a and it is not ranked.",
-    "A library's score averages the ranks of its own ranked cells only, and a rank is absolute (1 is best, N is worst among the libraries in that cell). A library with n/a or excluded cells is therefore judged on fewer, possibly easier, scenarios; the Ranked cells column shows how many."
+    "A library's score averages the ranks of its own ranked cells only, and a rank is absolute (1 is best, N is worst among the libraries in that cell). A library with n/a or excluded cells is therefore judged on fewer, possibly easier, scenarios; the Ranked cells column shows how many.",
+    "Stress-profile p99 on macOS includes a constant 100-200 ms host-to-VM stall (Postgres runs in an OrbStack VM) and is not a property of the library.",
+    "Run-to-run stability (two full runs on this machine, 2026-10-24, see .claude/PRPs/reports/full-run-report.md): p95 differed by 20% or less in 62 of 72 cells; the other 10 are all low-profile cells and reached up to 48%, while every stress cell stayed under 9%. The same five libraries made the top 5 in both runs, but sqlx and sqlc swapped ranks 2 and 3, so the order of database/sql, sqlx and sqlc is within noise. The cause is environmental (loaded macOS host, host-VM network crossing, WAL fsync on the VM disk); see .claude/PRPs/reports/p95-stability-report.md."
   ],
   "libraries": [
     {
