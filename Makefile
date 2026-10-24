@@ -39,6 +39,7 @@ build:
 
 vet:
 	go vet ./...
+	go vet internal/adapters/gormgen/generate/main.go
 
 test:
 	env -u BENCH_DSN go test ./...
@@ -74,7 +75,13 @@ gen-jet: db-up
 
 # sqlboiler also reads the live schema. It finds its driver by looking for sqlboiler-psql on PATH,
 # so the pinned driver is linked into a temporary directory first.
+# It takes the connection as PSQL_* variables and cannot read BENCH_DSN, so a BENCH_DSN other than the
+# one built from BENCH_PG_PORT and BENCH_PG_PASSWORD is refused instead of silently reading another database.
 gen-sqlboiler: db-up
+	@if [ '$(BENCH_DSN)' != 'postgres://postgres:$(BENCH_PG_PASSWORD)@127.0.0.1:$(BENCH_PG_PORT)/bench?sslmode=disable' ]; then \
+		echo "gen-sqlboiler cannot use a custom BENCH_DSN; set BENCH_PG_PORT and BENCH_PG_PASSWORD instead"; \
+		exit 1; \
+	fi
 	@bin=$$(mktemp -d) && trap 'rm -rf "$$bin"' EXIT && \
 	ln -s "$$($(GOTOOL) -n sqlboiler-psql)" "$$bin/sqlboiler-psql" && \
 	PATH="$$bin:$$PATH" PSQL_HOST=127.0.0.1 PSQL_PORT='$(BENCH_PG_PORT)' PSQL_USER=postgres PSQL_PASS='$(BENCH_PG_PASSWORD)' \
