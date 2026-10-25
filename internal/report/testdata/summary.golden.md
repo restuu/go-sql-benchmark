@@ -6,7 +6,7 @@ Run started 2026-10-21T04:58:02Z (UTC). Numbers are only comparable on the same 
 
 Compares 3 libraries on three measures: **latency** (p95, the time within which 95% of calls finished), **memory** (B/op, bytes allocated per operation) and **CPU** (CPU ns/op, CPU time per operation). Each library runs 6 scenarios under 2 load profiles; a **case** is one scenario under one load profile, written scenario/profile, for example join/low. Union is measured but not scored (see Union below); the other 5 scenarios, 10 cases, make up every score.
 
-This is the summary. The per-case tables, pros and cons, and the qualitative sections (flexibility, ease of use, learning curve, community and a separate qualitative ranking) are in the [detailed report](REPORT.md).
+This is the summary. The per-case tables, pros and cons, and the qualitative sections (flexibility, ease of use, learning curve, community, a separate qualitative ranking and a combined ranking) are in the [detailed report](REPORT.md).
 
 ## How to read the numbers
 

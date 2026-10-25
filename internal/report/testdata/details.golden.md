@@ -253,3 +253,13 @@ Weights: flexibility 0.40, ease of use 0.35 (the learning curve counts as one mo
 | 1 | database/sql | 0.78 | 0.94 | 0.60 | 0.77 |
 | 2 | ent | 0.78 | 0.94 | 0.50 | 0.90 |
 | 3 | sqlx | 0.47 | 0.39 | 0.70 | 0.27 |
+
+## Combined ranking (judgement)
+
+A third ranking that adds each library's place in the measured ranking (Top 5 and "Also measured") to its place in the qualitative ranking above; the lowest sum is first. Both rankings count equally. Equal sums share a rank and are listed alphabetically. Only places are added, so how far apart two libraries are in score is lost, and a sum of a few places is within noise. The qualitative half is the author's judgement, so this ranking is too.
+
+| Rank | Library | Measured rank | Qualitative rank | Sum |
+|---|---|---|---|---|
+| 1 | database/sql | 1 | 1 | 2 |
+| 2 | ent | 3 | 2 | 5 |
+| 2 | sqlx | 2 | 3 | 5 |
