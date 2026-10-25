@@ -313,6 +313,36 @@ func TestRenderEmptyProsAndCons(t *testing.T) {
 	}
 }
 
+func TestRenderLibraryLinks(t *testing.T) {
+	tests := []struct {
+		name    string
+		heading string
+		want    string
+	}{
+		{"environment table has a link column", "## Environment", "| Library | Version | Label | Version used | Link |"},
+		{"environment row links the library", "## Environment", "| sqlx | v1.4.0 | no updates since 2024 | v1.4.0 | <https://github.com/jmoiron/sqlx> |"},
+		{"pros and cons link under the heading", "## Pros and cons", "### ent\n\n<https://github.com/ent/ent>\n"},
+	}
+	run, rb := loadFixture(t)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
+			doc, err := Render(run, rb, DefaultFiles)
+			if err != nil {
+				t.Fatalf("Render() error = %v", err)
+			}
+
+			// Act
+			got := section(t, doc.Summary+"\n"+doc.Details, tt.heading)
+
+			// Assert
+			if !strings.Contains(got, tt.want) {
+				t.Errorf("section %q missing %q:\n%s", tt.heading, tt.want, got)
+			}
+		})
+	}
+}
+
 func TestRenderFlexibility(t *testing.T) {
 	// Arrange
 	run, rb := loadFixture(t)
@@ -419,7 +449,7 @@ func TestRenderQualitativeSections(t *testing.T) {
 			"| Library | Repository | Stars | Last release | Last commit | Open issues |",
 			"| ent | ent/ent | 17000 | 2026-08-01 | 2026-10-20 | 400 |",
 			"- **database/sql**: Counts cover the whole Go project.",
-		}, "ent/ent"},
+		}, "| ent | ent/ent |"}, // not "ent/ent": the library URLs contain it
 	}
 	run, rb := loadFixture(t)
 	got, err := renderFull(run, rb)

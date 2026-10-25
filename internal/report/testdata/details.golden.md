@@ -141,6 +141,8 @@ Which scenarios each library expresses with its own query API. `n/a` means it ne
 
 ### database/sql
 
+<https://pkg.go.dev/database/sql>
+
 **Pros**
 
 - Reference implementation.
@@ -151,11 +153,15 @@ Which scenarios each library expresses with its own query API. `n/a` means it ne
 
 ### sqlx
 
+<https://github.com/jmoiron/sqlx>
+
 **Cons**
 
 - Unmaintained.
 
 ### ent
+
+<https://github.com/ent/ent>
 
 **Pros**
 

@@ -19,8 +19,8 @@ const validRubricTemplate = `{
   "methodology": ["line one"],
   "community_checked": "2026-10-24",
   "libraries": [
-    {"name": "database_sql", "display": "database/sql", "version_used": "stdlib", "pros": ["p"], "cons": ["c"], FLEX},
-    {"name": "ent", "display": "ent", "module": "ent", "label": "l", FLEX}
+    {"name": "database_sql", "display": "database/sql", "url": "https://pkg.go.dev/database/sql", "version_used": "stdlib", "pros": ["p"], "cons": ["c"], FLEX},
+    {"name": "ent", "display": "ent", "module": "ent", "url": "https://github.com/ent/ent", "label": "l", FLEX}
   ],
   "cell_notes": [
     {"library": "ent", "scenario": "join", "note": "first"},
@@ -54,6 +54,9 @@ func TestLoadRubric(t *testing.T) {
 		{"duplicate library", strings.Replace(validRubric, `"name": "ent"`, `"name": "database_sql"`, 1), "duplicate library"},
 		{"empty name", strings.Replace(validRubric, `"name": "ent"`, `"name": ""`, 1), "empty name"},
 		{"display with a newline", strings.Replace(validRubric, `"display": "ent"`, `"display": "e\nnt"`, 1), "display contains a newline"},
+		{"missing url", strings.Replace(validRubric, `"url": "https://github.com/ent/ent", `, "", 1), "not an https URL"},
+		{"plain http url", strings.Replace(validRubric, `"url": "https://github.com/ent/ent"`, `"url": "http://github.com/ent/ent"`, 1), "not an https URL"},
+		{"url with a space", strings.Replace(validRubric, `"url": "https://github.com/ent/ent"`, `"url": "https://github.com/ent/ e"`, 1), "not an https URL"},
 		{"empty display", strings.Replace(validRubric, `"display": "ent"`, `"display": ""`, 1), "empty display"},
 		{"negative weight", strings.Replace(validRubric, `"p95": 1`, `"p95": -1`, 1), "negative weight"},
 		{"weight sum overflows", strings.Replace(strings.Replace(validRubric, `"p95": 1`, `"p95": 1e308`, 1), `"cpu_ns_per_op": 2`, `"cpu_ns_per_op": 1e308`, 1), "overflows"},

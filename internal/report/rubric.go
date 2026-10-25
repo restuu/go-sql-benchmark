@@ -25,6 +25,7 @@ type LibraryInfo struct {
 	Name        string `json:"name"`
 	Display     string `json:"display"`
 	Module      string `json:"module"`
+	URL         string `json:"url"` // home page, printed in the environment table and under the pros and cons
 	Label       string `json:"label"`
 	VersionUsed string `json:"version_used"`
 	// HonorableMention, when set, is the reason this library is measured and shown but not ranked
@@ -104,6 +105,8 @@ func (rb Rubric) validate() error {
 			return fmt.Errorf("library %q has empty display", l.Name)
 		case strings.ContainsAny(l.Display, "\r\n"):
 			return fmt.Errorf("library %q: display contains a newline", l.Name)
+		case !strings.HasPrefix(l.URL, "https://") || strings.ContainsAny(l.URL, " \r\n"):
+			return fmt.Errorf("library %q: url %q is not an https URL", l.Name, l.URL)
 		case libs[l.Name]:
 			return fmt.Errorf("duplicate library %q", l.Name)
 		case strings.ContainsAny(l.HonorableMention, "\r\n"):

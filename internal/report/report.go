@@ -138,11 +138,11 @@ func writeLibraries(sb *strings.Builder, run result.Run, rb Rubric, r ranking) {
 	if v, ok := h.Libraries[driverModule]; ok {
 		fmt.Fprintf(sb, "- Driver shared by every database/sql-based library: %s %s\n", driverModule, v)
 	}
-	sb.WriteString("\n| Library | Version | Label | Version used |\n|---|---|---|---|\n")
+	sb.WriteString("\n| Library | Version | Label | Version used | Link |\n|---|---|---|---|---|\n")
 	for _, l := range r.libs {
 		info, _ := rb.library(l.library)
-		fmt.Fprintf(sb, "| %s | %s | %s | %s |\n", escapeCell(info.Display),
-			dashIfEmpty(h.Libraries[info.Module]), dashIfEmpty(escapeCell(info.Label)), dashIfEmpty(escapeCell(info.VersionUsed)))
+		fmt.Fprintf(sb, "| %s | %s | %s | %s | <%s> |\n", escapeCell(info.Display),
+			dashIfEmpty(h.Libraries[info.Module]), dashIfEmpty(escapeCell(info.Label)), dashIfEmpty(escapeCell(info.VersionUsed)), info.URL)
 	}
 	sb.WriteString("\n")
 }
@@ -262,7 +262,7 @@ func writeProsCons(sb *strings.Builder, rb Rubric, r ranking) {
 	sb.WriteString("## Pros and cons\n\n")
 	for _, l := range r.libs {
 		info, _ := rb.library(l.library)
-		fmt.Fprintf(sb, "### %s\n\n", info.Display)
+		fmt.Fprintf(sb, "### %s\n\n<%s>\n\n", info.Display, info.URL)
 		writeList(sb, "Pros", info.Pros)
 		writeList(sb, "Cons", info.Cons)
 	}

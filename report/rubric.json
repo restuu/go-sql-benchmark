@@ -20,7 +20,7 @@
   "community_checked": "2026-10-24",
   "libraries": [
     {
-      "name": "database_sql", "display": "database/sql", "module": "",
+      "name": "database_sql", "display": "database/sql", "module": "", "url": "https://pkg.go.dev/database/sql",
       "label": "", "version_used": "standard library",
       "pros": [
         "No dependency beyond the driver; it is the reference every other adapter is checked against.",
@@ -64,7 +64,7 @@
       }
     },
     {
-      "name": "sqlc", "display": "sqlc", "module": "",
+      "name": "sqlc", "display": "sqlc", "module": "", "url": "https://github.com/sqlc-dev/sqlc",
       "label": "", "version_used": "generator v1.31.1, pinned in tools/go.mod",
       "pros": [
         "Queries are checked against the schema when the code is generated, and the generated code is typed.",
@@ -110,7 +110,7 @@
       }
     },
     {
-      "name": "sqlx", "display": "sqlx", "module": "sqlx",
+      "name": "sqlx", "display": "sqlx", "module": "sqlx", "url": "https://github.com/jmoiron/sqlx",
       "label": "no updates since 2024", "version_used": "v1.4.0",
       "pros": [
         "Thin layer over database/sql: the SQL stays hand-written and struct scanning is added.",
@@ -154,7 +154,7 @@
       }
     },
     {
-      "name": "gorm", "display": "gorm", "module": "gorm",
+      "name": "gorm", "display": "gorm", "module": "gorm", "url": "https://github.com/go-gorm/gorm",
       "label": "", "version_used": "v1.31.2",
       "pros": [
         "Query API covers INSERT, UPDATE, DELETE, SELECT and JOIN (Joins with a relation produces one SQL JOIN)."
@@ -199,7 +199,7 @@
       }
     },
     {
-      "name": "ent", "display": "ent", "module": "ent",
+      "name": "ent", "display": "ent", "module": "ent", "url": "https://github.com/ent/ent",
       "label": "", "version_used": "v0.14.6",
       "pros": [
         "Typed query API generated from a schema definition."
@@ -245,7 +245,7 @@
       }
     },
     {
-      "name": "jet", "display": "go-jet", "module": "jet",
+      "name": "jet", "display": "go-jet", "module": "jet", "url": "https://github.com/go-jet/jet",
       "label": "", "version_used": "v2.16.1",
       "pros": [
         "Type-safe SQL builder; every scenario, including UNION, is expressed with its own API."
@@ -290,7 +290,7 @@
       }
     },
     {
-      "name": "pgx", "display": "pgx", "module": "pgx",
+      "name": "pgx", "display": "pgx", "module": "pgx", "url": "https://github.com/jackc/pgx",
       "label": "", "version_used": "v5.11.0",
       "honorable_mention": "pgx is a PostgreSQL-only driver API, so code written against it cannot move to another database.",
       "pros": [
@@ -336,7 +336,7 @@
       }
     },
     {
-      "name": "pgx_pool", "display": "pgx_pool", "module": "pgx",
+      "name": "pgx_pool", "display": "pgx_pool", "module": "pgx", "url": "https://github.com/jackc/pgx",
       "label": "", "version_used": "v5.11.0",
       "honorable_mention": "pgx is a PostgreSQL-only driver API, so code written against it cannot move to another database.",
       "pros": [
@@ -385,6 +385,7 @@
       "name": "bun",
       "display": "bun",
       "module": "bun",
+      "url": "https://github.com/uptrace/bun",
       "label": "",
       "version_used": "v1.3.0",
       "pros": [
@@ -438,6 +439,7 @@
       "name": "beego",
       "display": "beego",
       "module": "beego",
+      "url": "https://github.com/beego/beego",
       "label": "",
       "version_used": "v2.3.10",
       "pros": [
@@ -495,6 +497,7 @@
       "name": "pop",
       "display": "pop",
       "module": "pop",
+      "url": "https://github.com/gobuffalo/pop",
       "label": "",
       "version_used": "v6.4.1",
       "pros": [
@@ -551,6 +554,7 @@
       "name": "rel",
       "display": "rel",
       "module": "rel",
+      "url": "https://github.com/go-rel/rel",
       "label": "",
       "version_used": "v0.43.0",
       "pros": [
@@ -607,13 +611,15 @@
       "name": "sqlboiler",
       "display": "sqlboiler",
       "module": "sqlboiler",
-      "label": "",
+      "url": "https://github.com/aarondl/sqlboiler",
+      "label": "maintenance mode",
       "version_used": "v4.19.7",
       "pros": [
         "Typed models, column constants and where helpers generated from the live schema; Update and Delete report rows affected.",
         "JOIN is qm.InnerJoin bound onto a struct with Bind: one SQL statement."
       ],
       "cons": [
+        "In maintenance mode (https://github.com/aarondl/sqlboiler): no new features, only community bug fixes and compatibility changes, and maintainers usually do not resolve reported issues.",
         "UNION is not expressible without raw SQL, so that case is n/a.",
         "Needs a generation step against the live database (make gen-sqlboiler, which also needs the sqlboiler-psql driver binary on PATH) and a large amount of committed generated code.",
         "Insert reports no rows affected, so the adapter counts any error-free insert as 1 row.",
@@ -666,6 +672,7 @@
       "name": "gorm_gen",
       "display": "gorm/gen",
       "module": "gorm_gen",
+      "url": "https://github.com/go-gorm/gen",
       "label": "",
       "version_used": "v0.3.29",
       "pros": [
@@ -726,6 +733,7 @@
       "name": "xorm",
       "display": "xorm",
       "module": "xorm",
+      "url": "https://gitea.com/xorm/xorm",
       "label": "",
       "version_used": "v1.4.3",
       "pros": [

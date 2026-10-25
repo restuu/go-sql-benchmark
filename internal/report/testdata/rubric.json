@@ -13,6 +13,7 @@
     {
       "name": "database_sql",
       "display": "database/sql",
+      "url": "https://pkg.go.dev/database/sql",
       "version_used": "standard library",
       "pros": [
         "Reference implementation."
@@ -63,6 +64,7 @@
       "name": "ent",
       "display": "ent",
       "module": "ent",
+      "url": "https://github.com/ent/ent",
       "version_used": "v0.14.6",
       "pros": [
         "Typed graph API."
@@ -110,6 +112,7 @@
       "name": "sqlx",
       "display": "sqlx",
       "module": "sqlx",
+      "url": "https://github.com/jmoiron/sqlx",
       "label": "no updates since 2024",
       "version_used": "v1.4.0",
       "pros": [],

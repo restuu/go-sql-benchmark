@@ -150,7 +150,7 @@ Fork the repository (keep the `LICENSE` notice) and add the library as one more 
 2. Follow the adapter contract. Each method runs one scenario call and returns the rows affected or scanned (1, 1, 1, 1, 10 and 40 for insert, update, delete, select, join and union). Reads must scan every selected column, and there is no explicit `Prepare`. UPDATE or DELETE of a missing id affects 0 rows, SELECT of a missing id is an error, and UPDATE writes every column including zero values. `Init` must work again after `Close`. Return `bench.ErrUnsupported` for a scenario the library cannot express with its own query API; that case shows as "n/a" and is left out of the ranking. Apply the `bench.PoolConfig` that `Init` receives (`MaxOpen`, `MaxIdle`). Libraries on `database/sql` use `sql.Open("pgx", dsn)` so they share one driver; run `go get` for the library and check that `go.mod` still has no `toolchain` line.
 3. Add the contract tests by copying `internal/adapters/sqlx/sqlx_test.go` (`adaptertest.RunContract` and `adaptertest.RunVerifier`). Keep `Integration` in the test names, because `make test-db` only runs those, and pass the scenarios your adapter leaves unsupported as extra arguments, as `internal/adapters/beego/beego_test.go` does for `bench.ScenarioUnion`.
 4. Register the constructor in `registry` in `cmd/bench/main.go`, and in `libraryModules` if the library is a Go module whose version should appear in the report.
-5. Add an entry for it in `report/rubric.json`: display name, pros and cons, flexibility, ease of use, learning curve and community facts. The report refuses to render if a library in the run has no entry.
+5. Add an entry for it in `report/rubric.json`: display name, `url` (its https home page, linked in the report), pros and cons, flexibility, ease of use, learning curve and community facts. The report refuses to render if a library in the run has no entry.
 6. Check it with `make vet test`, then `make test-db` (runs the contract tests and a value-level correctness check against `database/sql` before every benchmark), then run `database_sql` plus your library and render the report: `make bench BENCH_ARGS="-libs database_sql,<name>"`. Scores are ratios to `database_sql`, so keep it in the run.
 
 ### Using an AI coding assistant
@@ -201,23 +201,23 @@ before and after. Do not change any level in report/rubric.json unless I ask; th
 - PostgreSQL: 15.19
 - Driver shared by every database/sql-based library: pgx v5.11.0
 
-| Library | Version | Label | Version used |
-|---|---|---|---|
-| pgx_pool | v5.11.0 | - | v5.11.0 |
-| pgx | v5.11.0 | - | v5.11.0 |
-| database/sql | - | - | standard library |
-| sqlx | v1.4.0 | no updates since 2024 | v1.4.0 |
-| sqlc | - | - | generator v1.31.1, pinned in tools/go.mod |
-| sqlboiler | v4.19.7 | - | v4.19.7 |
-| beego | v2.3.10 | - | v2.3.10 |
-| rel | v0.43.0 | - | v0.43.0 |
-| pop | v6.4.1 | - | v6.4.1 |
-| ent | v0.14.6 | - | v0.14.6 |
-| go-jet | v2.16.1 | - | v2.16.1 |
-| xorm | v1.4.3 | - | v1.4.3 |
-| gorm | v1.31.2 | - | v1.31.2 |
-| bun | v1.3.0 | - | v1.3.0 |
-| gorm/gen | v0.3.29 | - | v0.3.29 |
+| Library | Version | Label | Version used | Link |
+|---|---|---|---|---|
+| pgx_pool | v5.11.0 | - | v5.11.0 | <https://github.com/jackc/pgx> |
+| pgx | v5.11.0 | - | v5.11.0 | <https://github.com/jackc/pgx> |
+| database/sql | - | - | standard library | <https://pkg.go.dev/database/sql> |
+| sqlx | v1.4.0 | no updates since 2024 | v1.4.0 | <https://github.com/jmoiron/sqlx> |
+| sqlc | - | - | generator v1.31.1, pinned in tools/go.mod | <https://github.com/sqlc-dev/sqlc> |
+| sqlboiler | v4.19.7 | maintenance mode | v4.19.7 | <https://github.com/aarondl/sqlboiler> |
+| beego | v2.3.10 | - | v2.3.10 | <https://github.com/beego/beego> |
+| rel | v0.43.0 | - | v0.43.0 | <https://github.com/go-rel/rel> |
+| pop | v6.4.1 | - | v6.4.1 | <https://github.com/gobuffalo/pop> |
+| ent | v0.14.6 | - | v0.14.6 | <https://github.com/ent/ent> |
+| go-jet | v2.16.1 | - | v2.16.1 | <https://github.com/go-jet/jet> |
+| xorm | v1.4.3 | - | v1.4.3 | <https://gitea.com/xorm/xorm> |
+| gorm | v1.31.2 | - | v1.31.2 | <https://github.com/go-gorm/gorm> |
+| bun | v1.3.0 | - | v1.3.0 | <https://github.com/uptrace/bun> |
+| gorm/gen | v0.3.29 | - | v0.3.29 | <https://github.com/go-gorm/gen> |
 
 ## Run configuration
 

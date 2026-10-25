@@ -337,6 +337,8 @@ Which scenarios each library expresses with its own query API. `n/a` means it ne
 
 ### pgx_pool
 
+<https://github.com/jackc/pgx>
+
 **Pros**
 
 - Lowest-level adapter here: pgxpool with Query and Scan into locals, so it shows the cost of the driver and pool alone.
@@ -348,6 +350,8 @@ Which scenarios each library expresses with its own query API. `n/a` means it ne
 - PostgreSQL only.
 
 ### pgx
+
+<https://github.com/jackc/pgx>
 
 **Pros**
 
@@ -361,6 +365,8 @@ Which scenarios each library expresses with its own query API. `n/a` means it ne
 
 ### database/sql
 
+<https://pkg.go.dev/database/sql>
+
 **Pros**
 
 - No dependency beyond the driver; it is the reference every other adapter is checked against.
@@ -371,6 +377,8 @@ Which scenarios each library expresses with its own query API. `n/a` means it ne
 - Hand-written SQL strings and row scanning, with no compile-time check of either.
 
 ### sqlx
+
+<https://github.com/jmoiron/sqlx>
 
 **Pros**
 
@@ -384,6 +392,8 @@ Which scenarios each library expresses with its own query API. `n/a` means it ne
 
 ### sqlc
 
+<https://github.com/sqlc-dev/sqlc>
+
 **Pros**
 
 - Queries are checked against the schema when the code is generated, and the generated code is typed.
@@ -396,6 +406,8 @@ Which scenarios each library expresses with its own query API. `n/a` means it ne
 
 ### sqlboiler
 
+<https://github.com/aarondl/sqlboiler>
+
 **Pros**
 
 - Typed models, column constants and where helpers generated from the live schema; Update and Delete report rows affected.
@@ -403,12 +415,15 @@ Which scenarios each library expresses with its own query API. `n/a` means it ne
 
 **Cons**
 
+- In maintenance mode (https://github.com/aarondl/sqlboiler): no new features, only community bug fixes and compatibility changes, and maintainers usually do not resolve reported issues.
 - UNION is not expressible without raw SQL, so that case is n/a.
 - Needs a generation step against the live database (make gen-sqlboiler, which also needs the sqlboiler-psql driver binary on PATH) and a large amount of committed generated code.
 - Insert reports no rows affected, so the adapter counts any error-free insert as 1 row.
 - The JOIN clause and the Bind destination (alias-prefixed columns) are written by hand as strings.
 
 ### beego
+
+<https://github.com/beego/beego>
 
 **Pros**
 
@@ -422,6 +437,8 @@ Which scenarios each library expresses with its own query API. `n/a` means it ne
 
 ### rel
 
+<https://github.com/go-rel/rel>
+
 **Pros**
 
 - Query API covers INSERT, UPDATE (UpdateAny), DELETE (DeleteAny), SELECT and JOIN (JoinOn, one SQL statement); UpdateAny and DeleteAny report rows affected.
@@ -433,6 +450,8 @@ Which scenarios each library expresses with its own query API. `n/a` means it ne
 - Logs every statement by default; the adapter installs a no-op instrumenter.
 
 ### pop
+
+<https://github.com/gobuffalo/pop>
 
 **Pros**
 
@@ -447,6 +466,8 @@ Which scenarios each library expresses with its own query API. `n/a` means it ne
 
 ### ent
 
+<https://github.com/ent/ent>
+
 **Pros**
 
 - Typed query API generated from a schema definition.
@@ -459,6 +480,8 @@ Which scenarios each library expresses with its own query API. `n/a` means it ne
 
 ### go-jet
 
+<https://github.com/go-jet/jet>
+
 **Pros**
 
 - Type-safe SQL builder; every scenario, including UNION, is expressed with its own API.
@@ -469,6 +492,8 @@ Which scenarios each library expresses with its own query API. `n/a` means it ne
 - Pulls in lib/pq for array literals, although no adapter uses that driver.
 
 ### xorm
+
+<https://gitea.com/xorm/xorm>
 
 **Pros**
 
@@ -483,6 +508,8 @@ Which scenarios each library expresses with its own query API. `n/a` means it ne
 
 ### gorm
 
+<https://github.com/go-gorm/gorm>
+
 **Pros**
 
 - Query API covers INSERT, UPDATE, DELETE, SELECT and JOIN (Joins with a relation produces one SQL JOIN).
@@ -494,6 +521,8 @@ Which scenarios each library expresses with its own query API. `n/a` means it ne
 
 ### bun
 
+<https://github.com/uptrace/bun>
+
 **Pros**
 
 - Query builder covers every scenario: JOIN is a belongs-to relation compiled to one SQL JOIN, UNION is Union on the select builder, and writes report rows affected.
@@ -503,6 +532,8 @@ Which scenarios each library expresses with its own query API. `n/a` means it ne
 - Models embed bun.BaseModel and carry bun: struct tags, and PostgreSQL needs the separate pgdialect module.
 
 ### gorm/gen
+
+<https://github.com/go-gorm/gen>
 
 **Pros**
 
