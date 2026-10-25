@@ -870,3 +870,25 @@ Weights: flexibility 0.40, ease of use 0.35 (the learning curve counts as one mo
 | - | pgx_pool | 0.63 | 0.44 | 0.60 | 0.95 |
 
 Libraries marked `-` are honorable mentions and are not ranked.
+
+## Combined ranking (judgement)
+
+A third ranking that adds each library's place in the measured ranking (Top 5 and "Also measured") to its place in the qualitative ranking above; the lowest sum is first. Both rankings count equally. Equal sums share a rank and are listed alphabetically. Only places are added, so how far apart two libraries are in score is lost, and a sum of a few places is within noise. The qualitative half is the author's judgement, so this ranking is too.
+
+| Rank | Library | Measured rank | Qualitative rank | Sum |
+|---|---|---|---|---|
+| 1 | rel | 6 | 3 | 9 |
+| 1 | sqlboiler | 4 | 5 | 9 |
+| 3 | go-jet | 9 | 2 | 11 |
+| 4 | bun | 12 | 1 | 13 |
+| 4 | database/sql | 1 | 12 | 13 |
+| 6 | sqlc | 3 | 11 | 14 |
+| 7 | beego | 5 | 10 | 15 |
+| 7 | ent | 8 | 7 | 15 |
+| 7 | gorm | 11 | 4 | 15 |
+| 7 | pop | 7 | 8 | 15 |
+| 7 | sqlx | 2 | 13 | 15 |
+| 12 | gorm/gen | 13 | 6 | 19 |
+| 12 | xorm | 10 | 9 | 19 |
+
+Honorable mentions are not ranked here either.
