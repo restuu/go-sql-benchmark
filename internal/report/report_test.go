@@ -434,8 +434,8 @@ func TestRenderQualitativeSections(t *testing.T) {
 		{"ease of use", "## Ease of use (qualitative)", []string{
 			"not part of the score",
 			"Levels for debugging: `good` = the SQL that ran",
-			"| Library | setup effort | query writing | type safety | debugging |",
-			"| ent | poor | good | good | fair |",
+			"| Library | setup effort | query writing | debugging |",
+			"| ent | poor | good | fair |",
 			"Ease note for sqlx with a | pipe.",
 		}, "Ease note for"},
 		{"learning curve", "## Learning curve (qualitative)", []string{
@@ -475,6 +475,29 @@ func TestRenderQualitativeSections(t *testing.T) {
 				t.Errorf("%s content leaked before its section", tt.name)
 			}
 		})
+	}
+}
+
+func TestRenderTypeSafetySection(t *testing.T) {
+	// Arrange
+	run, rb := loadFixture(t)
+
+	// Act
+	got, err := renderFull(run, rb)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("renderFull() error = %v", err)
+	}
+	body := section(t, got, "## Type safety (qualitative)")
+	for _, want := range []string{"| Library | Type safety |", "| ent | good |"} {
+		if !strings.Contains(body, want) {
+			t.Errorf("section missing %q:\n%s", want, body)
+		}
+	}
+	curve, typeSafety, community := strings.Index(got, "## Learning curve"), strings.Index(got, "## Type safety (qualitative)"), strings.Index(got, "## Community support")
+	if !(curve < typeSafety && typeSafety < community) {
+		t.Errorf("type safety section is out of order: learning curve %d, type safety %d, community %d", curve, typeSafety, community)
 	}
 }
 

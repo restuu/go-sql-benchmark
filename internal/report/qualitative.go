@@ -35,14 +35,13 @@ type Community struct {
 const dateLayout = "2006-01-02"
 
 var (
-	easeCriteria = []string{"setup_effort", "query_writing", "type_safety", "debugging"}
+	easeCriteria = []string{"setup_effort", "query_writing", "debugging"}
 	easeLevels   = []string{"good", "fair", "poor"}
 	curveLevels  = []string{"gentle", "moderate", "steep"}
 
 	easeCriterionLabels = map[string]string{
 		"setup_effort":  "setup effort",
 		"query_writing": "query writing",
-		"type_safety":   "type safety",
 		"debugging":     "debugging",
 	}
 )
@@ -165,8 +164,8 @@ func writeNotes(sb *strings.Builder, libs []LibraryInfo, notes func(LibraryInfo)
 func writeEaseOfUse(sb *strings.Builder, rb Rubric, r ranking) {
 	libs := inRunLibraries(rb, r)
 	sb.WriteString("## Ease of use (qualitative)\n\n")
-	sb.WriteString("Hand-written judgement of the day-to-day work a library asks for. It is not part of the score, the Top 5 or the stability check. Levels for setup effort, query writing and type safety: `good` = little work or checked early, `fair` = some manual work or checked only partly, `poor` = mostly manual or checked only at run time. Levels for debugging: `good` = the SQL that ran and its errors are visible with little setup, `fair` = visible after configuring logging or hooks, `poor` = hard to see what ran.\n\n")
-	sb.WriteString("Criteria: setup effort = codegen, config and boilerplate before the first query; query writing = code a typical query takes; type safety = how many mistakes the compiler catches; debugging = SQL visibility, error messages and logging hooks.\n\n")
+	sb.WriteString("Hand-written judgement of the day-to-day work a library asks for. It is not part of the score, the Top 5 or the stability check. Levels for setup effort and query writing: `good` = little work, `fair` = some manual work, `poor` = mostly manual. Levels for debugging: `good` = the SQL that ran and its errors are visible with little setup, `fair` = visible after configuring logging or hooks, `poor` = hard to see what ran.\n\n")
+	sb.WriteString("Criteria: setup effort = codegen, config and boilerplate before the first query; query writing = code a typical query takes; debugging = SQL visibility, error messages and logging hooks.\n\n")
 	sb.WriteString("| Library |")
 	for _, c := range easeCriteria {
 		sb.WriteString(" " + easeCriterionLabels[c] + " |")
@@ -193,6 +192,17 @@ func writeLearningCurve(sb *strings.Builder, rb Rubric, r ranking) {
 	}
 	sb.WriteString("\n")
 	writeNotes(sb, libs, func(i LibraryInfo) []string { return i.LearningCurve.Notes })
+}
+
+func writeTypeSafety(sb *strings.Builder, rb Rubric, r ranking) {
+	libs := inRunLibraries(rb, r)
+	sb.WriteString("## Type safety (qualitative)\n\n")
+	sb.WriteString("Hand-written judgement of how many mistakes the Go compiler catches before the program runs, such as a misspelled column name or a wrong type. It is not part of the measured score, the Top 5 or the stability check, but it is one of the four weighted parts of the qualitative ranking. `good` = checked at compile time, `fair` = checked only partly, `poor` = mostly checked at run time.\n\n")
+	sb.WriteString("| Library | Type safety |\n|---|---|\n")
+	for _, info := range libs {
+		fmt.Fprintf(sb, "| %s | %s |\n", escapeCell(info.Display), info.TypeSafety)
+	}
+	sb.WriteString("\n")
 }
 
 func writeCommunity(sb *strings.Builder, rb Rubric, r ranking) {

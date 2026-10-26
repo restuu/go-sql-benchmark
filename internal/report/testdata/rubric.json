@@ -34,11 +34,11 @@
           "Dynamic SQL is built by hand with a | pipe."
         ]
       },
+      "type_safety": "poor",
       "ease_of_use": {
         "criteria": {
           "setup_effort": "good",
           "query_writing": "poor",
-          "type_safety": "poor",
           "debugging": "good"
         },
         "notes": [
@@ -83,11 +83,11 @@
           "Predicates compose into a slice."
         ]
       },
+      "type_safety": "good",
       "ease_of_use": {
         "criteria": {
           "setup_effort": "poor",
           "query_writing": "good",
-          "type_safety": "good",
           "debugging": "fair"
         },
         "notes": [
@@ -132,11 +132,11 @@
           "unverified: named queries only."
         ]
       },
+      "type_safety": "poor",
       "ease_of_use": {
         "criteria": {
           "setup_effort": "good",
           "query_writing": "fair",
-          "type_safety": "poor",
           "debugging": "good"
         },
         "notes": [

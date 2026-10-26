@@ -74,6 +74,7 @@ func Render(run result.Run, rb Rubric, files Files) (Report, error) {
 	writeFlexibility(&details, rb, r)
 	writeEaseOfUse(&details, rb, r)
 	writeLearningCurve(&details, rb, r)
+	writeTypeSafety(&details, rb, r)
 	writeCommunity(&details, rb, r)
 	if err := writeQualitativeRanking(&details, rb, r); err != nil {
 		return Report{}, err
@@ -122,7 +123,7 @@ func writeHeader(sb *strings.Builder, run result.Run, files Files) {
 		"the other %d scenarios, %d cases, make up every score.\n\n",
 		len(libraryNames(run)), len(bench.AllScenarios), len(run.Config.Profiles),
 		len(scoredScenarios()), len(scoredScenarios())*len(run.Config.Profiles))
-	fmt.Fprintf(sb, "This is the summary. The per-case tables, pros and cons, and the qualitative sections (flexibility, ease of use, learning curve, community, a separate qualitative ranking and a combined ranking) are in the [detailed report](%s).\n\n", url.PathEscape(files.Details))
+	fmt.Fprintf(sb, "This is the summary. The per-case tables, pros and cons, and the qualitative sections (flexibility, ease of use, learning curve, type safety, community, a separate qualitative ranking and a combined ranking) are in the [detailed report](%s).\n\n", url.PathEscape(files.Details))
 }
 
 func writeDetailsHeader(sb *strings.Builder, files Files) {

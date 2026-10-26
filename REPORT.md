@@ -668,27 +668,27 @@ Levels: `native` = the library's own API composes it; `partial` = works with cav
 
 ## Ease of use (qualitative)
 
-Hand-written judgement of the day-to-day work a library asks for. It is not part of the score, the Top 5 or the stability check. Levels for setup effort, query writing and type safety: `good` = little work or checked early, `fair` = some manual work or checked only partly, `poor` = mostly manual or checked only at run time. Levels for debugging: `good` = the SQL that ran and its errors are visible with little setup, `fair` = visible after configuring logging or hooks, `poor` = hard to see what ran.
+Hand-written judgement of the day-to-day work a library asks for. It is not part of the score, the Top 5 or the stability check. Levels for setup effort and query writing: `good` = little work, `fair` = some manual work, `poor` = mostly manual. Levels for debugging: `good` = the SQL that ran and its errors are visible with little setup, `fair` = visible after configuring logging or hooks, `poor` = hard to see what ran.
 
-Criteria: setup effort = codegen, config and boilerplate before the first query; query writing = code a typical query takes; type safety = how many mistakes the compiler catches; debugging = SQL visibility, error messages and logging hooks.
+Criteria: setup effort = codegen, config and boilerplate before the first query; query writing = code a typical query takes; debugging = SQL visibility, error messages and logging hooks.
 
-| Library | setup effort | query writing | type safety | debugging |
-|---|---|---|---|---|
-| database/sql | good | poor | poor | good |
-| sqlc | fair | good | good | good |
-| sqlx | good | fair | poor | good |
-| gorm | good | good | fair | fair |
-| ent | poor | good | good | fair |
-| go-jet | fair | good | good | good |
-| pgx | good | fair | poor | good |
-| pgx_pool | good | poor | poor | good |
-| bun | good | good | fair | good |
-| beego | fair | fair | poor | fair |
-| pop | fair | good | poor | fair |
-| rel | good | good | fair | good |
-| sqlboiler | poor | good | good | good |
-| gorm/gen | poor | good | good | fair |
-| xorm | fair | good | poor | fair |
+| Library | setup effort | query writing | debugging |
+|---|---|---|---|
+| database/sql | good | poor | good |
+| sqlc | fair | good | good |
+| sqlx | good | fair | good |
+| gorm | good | good | fair |
+| ent | poor | good | fair |
+| go-jet | fair | good | good |
+| pgx | good | fair | good |
+| pgx_pool | good | poor | good |
+| bun | good | good | good |
+| beego | fair | fair | fair |
+| pop | fair | good | fair |
+| rel | good | good | good |
+| sqlboiler | poor | good | good |
+| gorm/gen | poor | good | fair |
+| xorm | fair | good | fair |
 
 **database/sql**
 
@@ -846,6 +846,28 @@ Hand-written judgement of how long a Go developer who knows SQL needs before wri
 
 - A session-style API with its own conventions (mappers, Cols, Table plus Join); documentation is thinner than GORM.
 
+## Type safety (qualitative)
+
+Hand-written judgement of how many mistakes the Go compiler catches before the program runs, such as a misspelled column name or a wrong type. It is not part of the measured score, the Top 5 or the stability check, but it is one of the four weighted parts of the qualitative ranking. `good` = checked at compile time, `fair` = checked only partly, `poor` = mostly checked at run time.
+
+| Library | Type safety |
+|---|---|
+| database/sql | poor |
+| sqlc | good |
+| sqlx | poor |
+| gorm | fair |
+| ent | good |
+| go-jet | good |
+| pgx | poor |
+| pgx_pool | poor |
+| bun | fair |
+| beego | poor |
+| pop | poor |
+| rel | fair |
+| sqlboiler | good |
+| gorm/gen | good |
+| xorm | poor |
+
 ## Community support (facts)
 
 Repository facts read on 2026-10-24, with no rating and no part in the score; they go stale, so re-check before relying on them. Open issues exclude pull requests.
@@ -878,27 +900,27 @@ Repository facts read on 2026-10-24, with no rating and no part in the score; th
 - **xorm**: Hosted on Gitea rather than GitHub; figures come from the Gitea API (open issues exclude pull requests).
 ## Qualitative ranking (judgement)
 
-A second, separate ranking of the three sections above. It is not part of the measured score, the Top 5 or the stability check. The levels behind it are the author's judgement and the score only turns them into numbers, so it looks more objective than it is.
+A second, separate ranking of the four weighted parts of the qualitative sections above. It is not part of the measured score, the Top 5 or the stability check. The levels behind it are the author's judgement and the score only turns them into numbers, so it looks more objective than it is.
 
-Weights: flexibility 0.40, ease of use 0.35 (the learning curve counts as one more criterion), community 0.25. Levels count linearly from 1 (best) to 0 (worst). Community is the mean of last-commit recency and last-release recency (1 within 30 days of 2026-10-24, 0 after 730 days) and open issues per 1,000 stars (1 with none, 0 at 100 or more); stars are left out because they reward age. Equal totals share a rank and are listed alphabetically.
+Weights: flexibility 0.28, ease of use 0.24 (the learning curve counts as one more criterion), community 0.17, type safety 0.31. Levels count linearly from 1 (best) to 0 (worst). Community is the mean of last-commit recency and last-release recency (1 within 30 days of 2026-10-24, 0 after 730 days) and open issues per 1,000 stars (1 with none, 0 at 100 or more); stars are left out because they reward age. Equal totals share a rank and are listed alphabetically.
 
-| Rank | Library | Total | Flexibility | Ease of use | Community |
-|---|---|---|---|---|---|
-| 1 | bun | 0.93 | 1.00 | 0.80 | 0.98 |
-| 2 | go-jet | 0.90 | 0.94 | 0.80 | 0.97 |
-| 3 | rel | 0.89 | 1.00 | 0.80 | 0.85 |
-| 4 | gorm | 0.87 | 1.00 | 0.70 | 0.92 |
-| 5 | sqlboiler | 0.82 | 0.94 | 0.70 | 0.79 |
-| 6 | gorm/gen | 0.81 | 1.00 | 0.50 | 0.95 |
-| 7 | ent | 0.78 | 1.00 | 0.50 | 0.81 |
-| 8 | pop | 0.75 | 0.94 | 0.50 | 0.80 |
-| 9 | xorm | 0.74 | 1.00 | 0.50 | 0.67 |
-| 10 | beego | 0.72 | 0.94 | 0.40 | 0.82 |
-| 11 | sqlc | 0.71 | 0.56 | 0.80 | 0.82 |
-| 12 | database/sql | 0.53 | 0.33 | 0.60 | 0.77 |
-| 13 | sqlx | 0.49 | 0.44 | 0.70 | 0.27 |
-| - | pgx | 0.63 | 0.44 | 0.60 | 0.95 |
-| - | pgx_pool | 0.63 | 0.44 | 0.60 | 0.95 |
+| Rank | Library | Total | Flexibility | Ease of use | Community | Type safety |
+|---|---|---|---|---|---|---|
+| 1 | go-jet | 0.92 | 0.94 | 0.75 | 0.97 | 1.00 |
+| 2 | sqlboiler | 0.86 | 0.94 | 0.62 | 0.79 | 1.00 |
+| 3 | gorm/gen | 0.84 | 1.00 | 0.38 | 0.95 | 1.00 |
+| 4 | ent | 0.82 | 1.00 | 0.38 | 0.81 | 1.00 |
+| 5 | bun | 0.81 | 1.00 | 0.88 | 0.98 | 0.50 |
+| 6 | rel | 0.79 | 1.00 | 0.88 | 0.85 | 0.50 |
+| 7 | sqlc | 0.79 | 0.56 | 0.75 | 0.82 | 1.00 |
+| 8 | gorm | 0.77 | 1.00 | 0.75 | 0.92 | 0.50 |
+| 9 | pop | 0.55 | 0.94 | 0.62 | 0.80 | 0.00 |
+| 10 | xorm | 0.54 | 1.00 | 0.62 | 0.67 | 0.00 |
+| 11 | beego | 0.52 | 0.94 | 0.50 | 0.82 | 0.00 |
+| 12 | database/sql | 0.40 | 0.33 | 0.75 | 0.77 | 0.00 |
+| 13 | sqlx | 0.38 | 0.44 | 0.88 | 0.27 | 0.00 |
+| - | pgx | 0.47 | 0.44 | 0.75 | 0.95 | 0.00 |
+| - | pgx_pool | 0.47 | 0.44 | 0.75 | 0.95 | 0.00 |
 
 Libraries marked `-` are honorable mentions and are not ranked.
 
@@ -908,18 +930,18 @@ A third ranking that adds each library's place in the measured ranking (Top 5 an
 
 | Rank | Library | Measured rank | Qualitative rank | Sum |
 |---|---|---|---|---|
-| 1 | rel | 6 | 3 | 9 |
-| 1 | sqlboiler | 4 | 5 | 9 |
-| 3 | go-jet | 9 | 2 | 11 |
-| 4 | bun | 12 | 1 | 13 |
-| 4 | database/sql | 1 | 12 | 13 |
-| 6 | sqlc | 3 | 11 | 14 |
-| 7 | beego | 5 | 10 | 15 |
-| 7 | ent | 8 | 7 | 15 |
-| 7 | gorm | 11 | 4 | 15 |
-| 7 | pop | 7 | 8 | 15 |
+| 1 | sqlboiler | 4 | 2 | 6 |
+| 2 | go-jet | 9 | 1 | 10 |
+| 2 | sqlc | 3 | 7 | 10 |
+| 4 | ent | 8 | 4 | 12 |
+| 4 | rel | 6 | 6 | 12 |
+| 6 | database/sql | 1 | 12 | 13 |
 | 7 | sqlx | 2 | 13 | 15 |
-| 12 | gorm/gen | 13 | 6 | 19 |
-| 12 | xorm | 10 | 9 | 19 |
+| 8 | beego | 5 | 11 | 16 |
+| 8 | gorm/gen | 13 | 3 | 16 |
+| 8 | pop | 7 | 9 | 16 |
+| 11 | bun | 12 | 5 | 17 |
+| 12 | gorm | 11 | 8 | 19 |
+| 13 | xorm | 10 | 10 | 20 |
 
 Honorable mentions are not ranked here either.

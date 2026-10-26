@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -35,6 +36,7 @@ type LibraryInfo struct {
 	Cons             []string      `json:"cons"`
 	Flexibility      Flexibility   `json:"flexibility"`
 	EaseOfUse        EaseOfUse     `json:"ease_of_use"`
+	TypeSafety       string        `json:"type_safety"` // one level from EaseLevels
 	LearningCurve    LearningCurve `json:"learning_curve"`
 	Community        Community     `json:"community"`
 }
@@ -116,6 +118,9 @@ func (rb Rubric) validate() error {
 			if err := check(l.Name); err != nil {
 				return err
 			}
+		}
+		if !slices.Contains(easeLevels, l.TypeSafety) {
+			return fmt.Errorf("library %q: type safety has unknown level %q", l.Name, l.TypeSafety)
 		}
 		if err := l.Community.validate(l.Name, checked); err != nil {
 			return err

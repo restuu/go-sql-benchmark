@@ -6,7 +6,7 @@ Run started 2026-10-21T04:58:02Z (UTC). Numbers are only comparable on the same 
 
 Compares 3 libraries on three measures: **latency** (p95, the time within which 95% of calls finished), **memory** (B/op, bytes allocated per operation) and **CPU** (CPU ns/op, CPU time per operation). Each library runs 6 scenarios under 2 load profiles; a **case** is one scenario under one load profile, written scenario/profile, for example join/low. Union is measured but not scored (see Union below); the other 5 scenarios, 10 cases, make up every score.
 
-This is the summary. The per-case tables, pros and cons, and the qualitative sections (flexibility, ease of use, learning curve, community, a separate qualitative ranking and a combined ranking) are in the [detailed report](REPORT.md).
+This is the summary. The per-case tables, pros and cons, and the qualitative sections (flexibility, ease of use, learning curve, type safety, community, a separate qualitative ranking and a combined ranking) are in the [detailed report](REPORT.md).
 
 ## How to read the numbers
 
@@ -96,7 +96,7 @@ Fork the repository (keep the `LICENSE` notice) and add the library as one more 
 2. Follow the adapter contract. Each method runs one scenario call and returns the rows affected or scanned (1, 1, 1, 1, 10 and 40 for insert, update, delete, select, join and union). Reads must scan every selected column, and there is no explicit `Prepare`. UPDATE or DELETE of a missing id affects 0 rows, SELECT of a missing id is an error, and UPDATE writes every column including zero values. `Init` must work again after `Close`. Return `bench.ErrUnsupported` for a scenario the library cannot express with its own query API; that case shows as "n/a" and is left out of the ranking. Apply the `bench.PoolConfig` that `Init` receives (`MaxOpen`, `MaxIdle`). Libraries on `database/sql` use `sql.Open("pgx", dsn)` so they share one driver; run `go get` for the library and check that `go.mod` still has no `toolchain` line.
 3. Add the contract tests by copying `internal/adapters/sqlx/sqlx_test.go` (`adaptertest.RunContract` and `adaptertest.RunVerifier`). Keep `Integration` in the test names, because `make test-db` only runs those, and pass the scenarios your adapter leaves unsupported as extra arguments, as `internal/adapters/beego/beego_test.go` does for `bench.ScenarioUnion`.
 4. Register the constructor in `registry` in `cmd/bench/main.go`, and in `libraryModules` if the library is a Go module whose version should appear in the report.
-5. Add an entry for it in `report/rubric.json`: display name, `url` (its https home page, linked in the report), pros and cons, flexibility, ease of use, learning curve and community facts. The report refuses to render if a library in the run has no entry.
+5. Add an entry for it in `report/rubric.json`: display name, `url` (its https home page, linked in the report), pros and cons, flexibility, ease of use, type safety, learning curve and community facts. The report refuses to render if a library in the run has no entry.
 6. Check it with `make vet test`, then `make test-db` (runs the contract tests and a value-level correctness check against `database/sql` before every benchmark), then run `database_sql` plus your library and render the report: `make bench BENCH_ARGS="-libs database_sql,<name>"`. Scores are ratios to `database_sql`, so keep it in the run.
 
 ### Using an AI coding assistant

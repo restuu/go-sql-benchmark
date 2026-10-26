@@ -13,7 +13,7 @@
     "B/op and allocs/op also include each library's idiomatic result handling: sqlx, sqlc, gorm, ent and jet materialise rows, while the database/sql reference scans into locals, so part of the difference is the cost of that handling.",
     "A scenario counts as supported only when the library's own query API (or, for the SQL-first sqlc and sqlx, its SQL) expresses it; needing the raw-SQL escape hatch makes the case n/a.",
     "A library's score is the weighted geometric mean, over its ranked cases, of each metric divided by database/sql's value in the same case: 1.00 is the same as database/sql, 2.00 twice as much, 0.50 half, and lower is better. A ratio keeps the size of a difference, so a 1% gap moves the score by about 1% instead of a whole place, and a library's score does not depend on which other libraries were run. The scored cases are insert, update, delete, select and join under both load profiles, the same for every library; a library with error-excluded cases is judged on fewer, and the Ranked cases column shows how many.",
-    "Ease of use and learning curve are the author's judgement from writing and reviewing these adapters and reading each library's documentation, not measurements, and they are not ranked. Community facts (stars, last release, last commit, open issues) were read from the forge APIs on the date shown in that section; a release date is the date the latest release was published, or the tag commit date where the notes say so.",
+    "Ease of use, type safety and learning curve are the author's judgement from writing and reviewing these adapters and reading each library's documentation, not measurements, and they are not ranked. Community facts (stars, last release, last commit, open issues) were read from the forge APIs on the date shown in that section; a release date is the date the latest release was published, or the tag commit date where the notes say so.",
     "Stress-profile p99 on macOS includes a constant 100-200 ms host-to-VM stall (Postgres runs in an OrbStack VM) and is not a property of the library.",
     "Run-to-run stability (two full 15-library runs on this machine, 2026-10-24; the earlier 6-library pair had 62 of 72 cases within 20%, all 10 beyond at the low profile, and all 36 stress cases within 8.7%): p95 differed by 20% or less in 130 of 166 cases. The other 36 are 35 low-profile cases, which reached up to 114% (pgx select), and one stress case (pop insert, 27%); the remaining 82 stress cases stayed under 18%. The top 5 had the same libraries in the same order in both runs, and the five scores moved by 0.05 or less (beego most, 1.31 to 1.36), but sqlc and sqlx are 0.01 apart in both runs, so their order is within noise. The cause is environmental (loaded macOS host, host-VM network crossing, WAL fsync on the VM disk)."
   ],
@@ -29,11 +29,11 @@
       "cons": [
         "Hand-written SQL strings and row scanning, with no compile-time check of either."
       ],
+      "type_safety": "poor",
       "ease_of_use": {
         "criteria": {
           "setup_effort": "good",
           "query_writing": "poor",
-          "type_safety": "poor",
           "debugging": "good"
         },
         "notes": [
@@ -74,11 +74,11 @@
         "Needs a generation step (make gen-sqlc) and committed generated code.",
         "Each query lives in an SQL file; there is no runtime query builder."
       ],
+      "type_safety": "good",
       "ease_of_use": {
         "criteria": {
           "setup_effort": "fair",
           "query_writing": "good",
-          "type_safety": "good",
           "debugging": "good"
         },
         "notes": [
@@ -120,11 +120,11 @@
         "No updates since 2024.",
         "Scanning into structs is reflection-based."
       ],
+      "type_safety": "poor",
       "ease_of_use": {
         "criteria": {
           "setup_effort": "good",
           "query_writing": "fair",
-          "type_safety": "poor",
           "debugging": "good"
         },
         "notes": [
@@ -163,11 +163,11 @@
         "UNION is not expressible without raw SQL, so that case is n/a.",
         "Defaults need care to benchmark fairly: every write is wrapped in a transaction unless SkipDefaultTransaction is set, and Save or Updates(struct) misreport or skip zero values and missing rows unless guarded."
       ],
+      "type_safety": "fair",
       "ease_of_use": {
         "criteria": {
           "setup_effort": "good",
           "query_writing": "good",
-          "type_safety": "fair",
           "debugging": "fair"
         },
         "notes": [
@@ -209,11 +209,11 @@
         "UNION is not expressible without raw SQL, so that case is n/a.",
         "Needs a generation step (make gen-ent) and a large amount of committed generated code."
       ],
+      "type_safety": "good",
       "ease_of_use": {
         "criteria": {
           "setup_effort": "poor",
           "query_writing": "good",
-          "type_safety": "good",
           "debugging": "fair"
         },
         "notes": [
@@ -254,11 +254,11 @@
         "Code is generated from the live database (make gen-jet needs it running).",
         "Pulls in lib/pq for array literals, although no adapter uses that driver."
       ],
+      "type_safety": "good",
       "ease_of_use": {
         "criteria": {
           "setup_effort": "fair",
           "query_writing": "good",
-          "type_safety": "good",
           "debugging": "good"
         },
         "notes": [
@@ -301,11 +301,11 @@
         "Hand-written SQL and no query builder.",
         "PostgreSQL only."
       ],
+      "type_safety": "poor",
       "ease_of_use": {
         "criteria": {
           "setup_effort": "good",
           "query_writing": "fair",
-          "type_safety": "poor",
           "debugging": "good"
         },
         "notes": [
@@ -347,11 +347,11 @@
         "Hand-written SQL and manual scanning of every column.",
         "PostgreSQL only."
       ],
+      "type_safety": "poor",
       "ease_of_use": {
         "criteria": {
           "setup_effort": "good",
           "query_writing": "poor",
-          "type_safety": "poor",
           "debugging": "good"
         },
         "notes": [
@@ -394,11 +394,11 @@
       "cons": [
         "Models embed bun.BaseModel and carry bun: struct tags, and PostgreSQL needs the separate pgdialect module."
       ],
+      "type_safety": "fair",
       "ease_of_use": {
         "criteria": {
           "setup_effort": "good",
           "query_writing": "good",
-          "type_safety": "fair",
           "debugging": "good"
         },
         "notes": [
@@ -450,11 +450,11 @@
         "Global registries: models register once before first use and a database alias name cannot be reused, so the adapter registers a fresh alias on every Init.",
         "A query that never calls Limit is capped at 1000 rows by default."
       ],
+      "type_safety": "poor",
       "ease_of_use": {
         "criteria": {
           "setup_effort": "fair",
           "query_writing": "fair",
-          "type_safety": "poor",
           "debugging": "fair"
         },
         "notes": [
@@ -509,11 +509,11 @@
         "Opens its own pool (no *sql.DB injection), though on the same pgx stdlib driver.",
         "Create, Update and Destroy run model lifecycle callbacks (before/after hooks)."
       ],
+      "type_safety": "poor",
       "ease_of_use": {
         "criteria": {
           "setup_effort": "fair",
           "query_writing": "good",
-          "type_safety": "poor",
           "debugging": "fair"
         },
         "notes": [
@@ -565,11 +565,11 @@
         "The PostgreSQL adapter (go-rel/postgres v0.12.0) has had no release since 2024-05.",
         "Logs every statement by default; the adapter installs a no-op instrumenter."
       ],
+      "type_safety": "fair",
       "ease_of_use": {
         "criteria": {
           "setup_effort": "good",
           "query_writing": "good",
-          "type_safety": "fair",
           "debugging": "good"
         },
         "notes": [
@@ -625,11 +625,11 @@
         "Insert reports no rows affected, so the adapter counts any error-free insert as 1 row.",
         "The JOIN clause and the Bind destination (alias-prefixed columns) are written by hand as strings."
       ],
+      "type_safety": "good",
       "ease_of_use": {
         "criteria": {
           "setup_effort": "poor",
           "query_writing": "good",
-          "type_safety": "good",
           "debugging": "good"
         },
         "notes": [
@@ -686,11 +686,11 @@
         "gorm.io/gen v0.3.29 requires gorm.io/plugin/dbresolver v1.5.3, which does not compile against gorm v1.31.2; go.mod pins dbresolver v1.6.2.",
         "Same GORM defaults as the gorm adapter need care (SkipDefaultTransaction, an explicit column Select so Updates(struct) writes zero values)."
       ],
+      "type_safety": "good",
       "ease_of_use": {
         "criteria": {
           "setup_effort": "poor",
           "query_writing": "good",
-          "type_safety": "good",
           "debugging": "fair"
         },
         "notes": [
@@ -745,11 +745,11 @@
         "Update(struct) skips zero values (a false Right) unless the columns are named, and Get reports a missing row as found=false, not as an error.",
         "Conditions, join clauses and the select list are strings checked at run time."
       ],
+      "type_safety": "poor",
       "ease_of_use": {
         "criteria": {
           "setup_effort": "fair",
           "query_writing": "good",
-          "type_safety": "poor",
           "debugging": "fair"
         },
         "notes": [
