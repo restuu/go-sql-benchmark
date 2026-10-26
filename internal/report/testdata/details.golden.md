@@ -193,15 +193,15 @@ Levels: `native` = the library's own API composes it; `partial` = works with cav
 
 ## Ease of use (qualitative)
 
-Hand-written judgement of the day-to-day work a library asks for. It is not part of the score, the Top 5 or the stability check. Levels for setup effort, query writing and type safety: `good` = little work or checked early, `fair` = some manual work or checked only partly, `poor` = mostly manual or checked only at run time. Levels for debugging: `good` = the SQL that ran and its errors are visible with little setup, `fair` = visible after configuring logging or hooks, `poor` = hard to see what ran.
+Hand-written judgement of the day-to-day work a library asks for. It is not part of the score, the Top 5 or the stability check. Levels for setup effort and query writing: `good` = little work, `fair` = some manual work, `poor` = mostly manual. Levels for debugging: `good` = the SQL that ran and its errors are visible with little setup, `fair` = visible after configuring logging or hooks, `poor` = hard to see what ran.
 
-Criteria: setup effort = codegen, config and boilerplate before the first query; query writing = code a typical query takes; type safety = how many mistakes the compiler catches; debugging = SQL visibility, error messages and logging hooks.
+Criteria: setup effort = codegen, config and boilerplate before the first query; query writing = code a typical query takes; debugging = SQL visibility, error messages and logging hooks.
 
-| Library | setup effort | query writing | type safety | debugging |
-|---|---|---|---|---|
-| database/sql | good | poor | poor | good |
-| ent | poor | good | good | fair |
-| sqlx | good | fair | poor | good |
+| Library | setup effort | query writing | debugging |
+|---|---|---|---|
+| database/sql | good | poor | good |
+| ent | poor | good | fair |
+| sqlx | good | fair | good |
 
 **database/sql**
 
@@ -237,6 +237,16 @@ Hand-written judgement of how long a Go developer who knows SQL needs before wri
 
 - Curve note for sqlx.
 
+## Type safety (qualitative)
+
+Hand-written judgement of how many mistakes the Go compiler catches before the program runs, such as a misspelled column name or a wrong type. It is not part of the measured score, the Top 5 or the stability check, but it is one of the four weighted parts of the qualitative ranking. `good` = checked at compile time, `fair` = checked only partly, `poor` = mostly checked at run time.
+
+| Library | Type safety |
+|---|---|
+| database/sql | poor |
+| ent | good |
+| sqlx | poor |
+
 ## Community support (facts)
 
 Repository facts read on 2026-10-24, with no rating and no part in the score; they go stale, so re-check before relying on them. Open issues exclude pull requests.
@@ -250,15 +260,15 @@ Repository facts read on 2026-10-24, with no rating and no part in the score; th
 - **database/sql**: Counts cover the whole Go project.
 ## Qualitative ranking (judgement)
 
-A second, separate ranking of the three sections above. It is not part of the measured score, the Top 5 or the stability check. The levels behind it are the author's judgement and the score only turns them into numbers, so it looks more objective than it is.
+A second, separate ranking of the four weighted parts of the qualitative sections above. It is not part of the measured score, the Top 5 or the stability check. The levels behind it are the author's judgement and the score only turns them into numbers, so it looks more objective than it is.
 
-Weights: flexibility 0.40, ease of use 0.35 (the learning curve counts as one more criterion), community 0.25. Levels count linearly from 1 (best) to 0 (worst). Community is the mean of last-commit recency and last-release recency (1 within 30 days of 2026-10-24, 0 after 730 days) and open issues per 1,000 stars (1 with none, 0 at 100 or more); stars are left out because they reward age. Equal totals share a rank and are listed alphabetically.
+Weights: flexibility 0.28, ease of use 0.24 (the learning curve counts as one more criterion), community 0.17, type safety 0.31. Levels count linearly from 1 (best) to 0 (worst). Community is the mean of last-commit recency and last-release recency (1 within 30 days of 2026-10-24, 0 after 730 days) and open issues per 1,000 stars (1 with none, 0 at 100 or more); stars are left out because they reward age. Equal totals share a rank and are listed alphabetically.
 
-| Rank | Library | Total | Flexibility | Ease of use | Community |
-|---|---|---|---|---|---|
-| 1 | database/sql | 0.78 | 0.94 | 0.60 | 0.77 |
-| 2 | ent | 0.78 | 0.94 | 0.50 | 0.90 |
-| 3 | sqlx | 0.47 | 0.39 | 0.70 | 0.27 |
+| Rank | Library | Total | Flexibility | Ease of use | Community | Type safety |
+|---|---|---|---|---|---|---|
+| 1 | ent | 0.82 | 0.94 | 0.38 | 0.90 | 1.00 |
+| 2 | database/sql | 0.57 | 0.94 | 0.75 | 0.77 | 0.00 |
+| 3 | sqlx | 0.37 | 0.39 | 0.88 | 0.27 | 0.00 |
 
 ## Combined ranking (judgement)
 
@@ -266,6 +276,6 @@ A third ranking that adds each library's place in the measured ranking (Top 5 an
 
 | Rank | Library | Measured rank | Qualitative rank | Sum |
 |---|---|---|---|---|
-| 1 | database/sql | 1 | 1 | 2 |
-| 2 | ent | 3 | 2 | 5 |
-| 2 | sqlx | 2 | 3 | 5 |
+| 1 | database/sql | 1 | 2 | 3 |
+| 2 | ent | 3 | 1 | 4 |
+| 3 | sqlx | 2 | 3 | 5 |

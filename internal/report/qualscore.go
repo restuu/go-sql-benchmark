@@ -14,6 +14,7 @@ const (
 	flexibilityWeight = 8
 	easeOfUseWeight   = 7
 	communityWeight   = 5
+	typeSafetyWeight  = 9
 )
 
 const (
@@ -39,13 +40,14 @@ var (
 // qualScore is the numeric reading of one library's hand-written qualitative entries, each part
 // and the total on a 0 to 1 scale (higher is better).
 type qualScore struct {
-	library                             string
-	flexibility, ease, community, total float64
+	library                                         string
+	flexibility, ease, community, typeSafety, total float64
 }
 
 // scoreQualitative turns the rubric levels and community facts of one library into numbers.
 // Flexibility is the mean over its capabilities. Ease of use is the mean over the ease criteria
-// plus the learning curve as one more criterion. Community is the mean of last-commit recency,
+// plus the learning curve as one more criterion. Type safety is its own rated level and the
+// fourth weighted part. Community is the mean of last-commit recency,
 // last-release recency and open-issue density (stars are left out because they reward age).
 // checked is Rubric.CommunityChecked.
 func scoreQualitative(info LibraryInfo, checked time.Time) (qualScore, error) {
@@ -61,6 +63,10 @@ func scoreQualitative(info LibraryInfo, checked time.Time) (qualScore, error) {
 	if !ok {
 		return qualScore{}, fmt.Errorf("library %q: learning curve: unknown level %q", info.Name, info.LearningCurve.Level)
 	}
+	typeSafety, ok := easeLevelScores[info.TypeSafety]
+	if !ok {
+		return qualScore{}, fmt.Errorf("library %q: type safety: unknown level %q", info.Name, info.TypeSafety)
+	}
 	flex, ease := mean(flexParts), mean(append(easeParts, curve))
 
 	commit, err := recencyScore(info.Community.LastCommit, checked)
@@ -73,10 +79,10 @@ func scoreQualitative(info LibraryInfo, checked time.Time) (qualScore, error) {
 	}
 	community := mean([]float64{commit, release, issueScore(info.Community)})
 
-	total := (flexibilityWeight*flex + easeOfUseWeight*ease + communityWeight*community) /
-		float64(flexibilityWeight+easeOfUseWeight+communityWeight)
+	total := (flexibilityWeight*flex + easeOfUseWeight*ease + communityWeight*community + typeSafetyWeight*typeSafety) /
+		float64(flexibilityWeight+easeOfUseWeight+communityWeight+typeSafetyWeight)
 	total = math.Round(total*totalPrecision) / totalPrecision // equal ratings tie despite summation order
-	return qualScore{library: info.Name, flexibility: flex, ease: ease, community: community, total: total}, nil
+	return qualScore{library: info.Name, flexibility: flex, ease: ease, community: community, typeSafety: typeSafety, total: total}, nil
 }
 
 // levelScores maps the rating of each name in names to its score; an unknown or missing level is
@@ -147,17 +153,17 @@ func writeQualitativeRanking(sb *strings.Builder, rb Rubric, r ranking) error {
 		return err
 	}
 
-	totalWeight := float64(flexibilityWeight + easeOfUseWeight + communityWeight)
+	totalWeight := float64(flexibilityWeight + easeOfUseWeight + communityWeight + typeSafetyWeight)
 	sb.WriteString("## Qualitative ranking (judgement)\n\n")
-	fmt.Fprintf(sb, "A second, separate ranking of the three sections above. It is not part of the measured score, the Top 5 or the stability check. "+
+	fmt.Fprintf(sb, "A second, separate ranking of the four weighted parts of the qualitative sections above. It is not part of the measured score, the Top 5 or the stability check. "+
 		"The levels behind it are the author's judgement and the score only turns them into numbers, so it looks more objective than it is.\n\n"+
-		"Weights: flexibility %s, ease of use %s (the learning curve counts as one more criterion), community %s. "+
+		"Weights: flexibility %s, ease of use %s (the learning curve counts as one more criterion), community %s, type safety %s. "+
 		"Levels count linearly from 1 (best) to 0 (worst). Community is the mean of last-commit recency and last-release recency "+
 		"(1 within %d days of %s, 0 after %d days) and open issues per 1,000 stars (1 with none, 0 at %.0f or more); stars are left out because they reward age. "+
 		"Equal totals share a rank and are listed alphabetically.\n\n",
-		share(flexibilityWeight, totalWeight), share(easeOfUseWeight, totalWeight), share(communityWeight, totalWeight),
+		share(flexibilityWeight, totalWeight), share(easeOfUseWeight, totalWeight), share(communityWeight, totalWeight), share(typeSafetyWeight, totalWeight),
 		recencyFullDays, rb.CommunityChecked, recencyZeroDays, issuesPer1000StarsCap)
-	sb.WriteString("| Rank | Library | Total | Flexibility | Ease of use | Community |\n|---|---|---|---|---|---|\n")
+	sb.WriteString("| Rank | Library | Total | Flexibility | Ease of use | Community | Type safety |\n|---|---|---|---|---|---|---|\n")
 	for i, rank := range qualRanks(pool) {
 		writeQualRow(sb, rb, fmt.Sprint(rank), pool[i])
 	}
@@ -188,8 +194,8 @@ func share(weight int, total float64) string {
 }
 
 func writeQualRow(sb *strings.Builder, rb Rubric, rank string, q qualScore) {
-	fmt.Fprintf(sb, "| %s | %s | %s | %s | %s | %s |\n", rank, escapeCell(displayName(rb, q.library)),
-		fixed(q.total, scoreDecimals), fixed(q.flexibility, scoreDecimals), fixed(q.ease, scoreDecimals), fixed(q.community, scoreDecimals))
+	fmt.Fprintf(sb, "| %s | %s | %s | %s | %s | %s | %s |\n", rank, escapeCell(displayName(rb, q.library)),
+		fixed(q.total, scoreDecimals), fixed(q.flexibility, scoreDecimals), fixed(q.ease, scoreDecimals), fixed(q.community, scoreDecimals), fixed(q.typeSafety, scoreDecimals))
 }
 
 // qualScores scores the given libraries and sorts them by total, best first, ties by display name.

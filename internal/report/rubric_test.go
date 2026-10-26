@@ -10,7 +10,7 @@ import (
 
 const validFlex = `"flexibility": {"capabilities": {"optional_filters": "native", "dynamic_ordering": "native", "conditional_join": "partial", "dynamic_projection": "raw_sql", "in_list_batch": "native", "dynamic_pagination": "static_only"}, "notes": ["note"]}`
 
-const validQual = `"ease_of_use": {"criteria": {"setup_effort": "good", "query_writing": "fair", "type_safety": "poor", "debugging": "good"}, "notes": ["ease note"]}, "learning_curve": {"level": "moderate", "notes": ["curve note"]}, "community": {"repo": "owner/name", "stars": 10, "open_issues": 2, "last_release": "2026-01-02", "last_commit": "2026-02-03"}`
+const validQual = `"type_safety": "poor", "ease_of_use": {"criteria": {"setup_effort": "good", "query_writing": "fair", "debugging": "good"}, "notes": ["ease note"]}, "learning_curve": {"level": "moderate", "notes": ["curve note"]}, "community": {"repo": "owner/name", "stars": 10, "open_issues": 2, "last_release": "2026-01-02", "last_commit": "2026-02-03"}`
 
 var validRubric = strings.ReplaceAll(validRubricTemplate, "FLEX", validFlex+", "+validQual)
 
@@ -74,6 +74,8 @@ func TestLoadRubric(t *testing.T) {
 		{"community negative issues", strings.Replace(validRubric, `"open_issues": 2`, `"open_issues": -2`, 1), "negative"},
 		{"community impossible date", strings.Replace(validRubric, `"2026-02-03"`, `"2026-02-30"`, 1), "last_commit"},
 		{"community newline note", strings.Replace(validRubric, `"last_commit": "2026-02-03"`, `"last_commit": "2026-02-03", "note": "a\nb"`, 1), "community note contains a newline"},
+		{"type safety missing", strings.Replace(validRubric, `"type_safety": "poor", `, "", 1), "type safety"},
+		{"type safety unknown level", strings.Replace(validRubric, `"type_safety": "poor"`, `"type_safety": "nativ"`, 1), "unknown level"},
 		{"ease unknown criterion", strings.Replace(validRubric, `"setup_effort"`, `"setup_effortz"`, 1), "unknown criterion"},
 		{"ease no notes", strings.Replace(validRubric, `"notes": ["ease note"]`, `"notes": []`, 1), "no ease of use notes"},
 		{"ease newline note", strings.Replace(validRubric, `"ease note"`, `"a\nb"`, 1), "newline"},
@@ -176,7 +178,7 @@ func TestFlexibilityVocabulary(t *testing.T) {
 
 func TestQualitativeVocabulary(t *testing.T) {
 	// Arrange
-	wantCriteria := []string{"setup_effort", "query_writing", "type_safety", "debugging"}
+	wantCriteria := []string{"setup_effort", "query_writing", "debugging"}
 	wantEase := []string{"good", "fair", "poor"}
 	wantCurve := []string{"gentle", "moderate", "steep"}
 

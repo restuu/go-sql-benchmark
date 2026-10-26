@@ -24,6 +24,7 @@ func uniformInfo(flex, ease, curve string, c Community) LibraryInfo {
 	}
 	return LibraryInfo{
 		Name:          "lib",
+		TypeSafety:    ease,
 		Flexibility:   Flexibility{Capabilities: capabilities},
 		EaseOfUse:     EaseOfUse{Criteria: criteria},
 		LearningCurve: LearningCurve{Level: curve},
@@ -36,34 +37,34 @@ func TestScoreQualitative(t *testing.T) {
 		name                       string
 		info                       LibraryInfo
 		wantFlex, wantEase, wantCm float64
-		wantTotal                  float64
+		wantTypeSafety, wantTotal  float64
 	}{
 		{
 			"best everywhere",
 			uniformInfo("native", "good", "gentle", Community{Stars: 1000, OpenIssues: 0, LastRelease: "2026-10-24", LastCommit: "2026-10-24"}),
-			1, 1, 1, 1,
+			1, 1, 1, 1, 1,
 		},
 		{
 			"worst everywhere",
 			uniformInfo("static_only", "poor", "steep", Community{Stars: 1000, OpenIssues: 100, LastRelease: "2020-01-01", LastCommit: "2020-01-01"}),
-			0, 0, 0, 0,
+			0, 0, 0, 0, 0,
 		},
 		{
 			"middle levels",
 			uniformInfo("partial", "fair", "moderate", Community{Stars: 1000, OpenIssues: 50, LastRelease: "2025-10-09", LastCommit: "2025-10-09"}),
-			2.0 / 3, 0.5, 0.5, // 380 days old scores 0.5 on recency, 50 issues per 1000 stars scores 0.5
-			(8*2.0/3 + 7*0.5 + 5*0.5) / 20,
+			2.0 / 3, 0.5, 0.5, 0.5, // 380 days old scores 0.5 on recency, 50 issues per 1000 stars scores 0.5
+			(8*2.0/3 + 7*0.5 + 5*0.5 + 9*0.5) / 29,
 		},
 		{
 			"mixed ease criteria and learning curve",
 			func() LibraryInfo {
 				i := uniformInfo("native", "good", "steep", Community{Stars: 1000, LastRelease: "2026-10-24", LastCommit: "2026-10-24"})
 				i.EaseOfUse.Criteria["debugging"] = "poor"
-				i.EaseOfUse.Criteria["type_safety"] = "fair"
+				i.TypeSafety = "fair"
 				return i
 			}(),
-			1, (1 + 1 + 0.5 + 0 + 0) / 5.0, 1,
-			(8*1 + 7*((1+1+0.5+0+0)/5.0) + 5*1) / 20,
+			1, (1 + 1 + 0 + 0) / 4.0, 1, 0.5,
+			(8*1 + 7*0.5 + 5*1 + 9*0.5) / 29,
 		},
 	}
 	for _, tt := range tests {
@@ -82,6 +83,7 @@ func TestScoreQualitative(t *testing.T) {
 				"flexibility": {got.flexibility, tt.wantFlex},
 				"ease":        {got.ease, tt.wantEase},
 				"community":   {got.community, tt.wantCm},
+				"typeSafety":  {got.typeSafety, tt.wantTypeSafety},
 				"total":       {got.total, tt.wantTotal},
 			} {
 				if math.Abs(pair[0]-pair[1]) > scoreEpsilon {
@@ -190,7 +192,7 @@ func TestRenderQualitativeRanking(t *testing.T) {
 				t.Fatalf("renderFull() error = %v", err)
 			}
 			body := section(t, got, heading)
-			for _, want := range append(tt.wantRows, "not part of the measured score", "author's judgement", "Weights: flexibility 0.40, ease of use 0.35", "community 0.25", "| Rank | Library | Total | Flexibility | Ease of use | Community |") {
+			for _, want := range append(tt.wantRows, "not part of the measured score", "author's judgement", "Weights: flexibility 0.28, ease of use 0.24", "community 0.17, type safety 0.31", "| Rank | Library | Total | Flexibility | Ease of use | Community | Type safety |") {
 				if !strings.Contains(body, want) {
 					t.Errorf("section missing %q:\n%s", want, body)
 				}
@@ -218,6 +220,7 @@ func TestRenderQualitativeRankingOrder(t *testing.T) {
 		best := uniformInfo("native", "good", "gentle", Community{Repo: "x/y", Stars: 1000, LastRelease: "2026-10-24", LastCommit: "2026-10-24"})
 		rb.Libraries[i].Flexibility = best.Flexibility
 		rb.Libraries[i].EaseOfUse.Criteria = best.EaseOfUse.Criteria
+		rb.Libraries[i].TypeSafety = best.TypeSafety
 		rb.Libraries[i].LearningCurve.Level = best.LearningCurve.Level
 		rb.Libraries[i].Community = best.Community
 	}
@@ -230,7 +233,7 @@ func TestRenderQualitativeRankingOrder(t *testing.T) {
 		t.Fatalf("renderFull() error = %v", err)
 	}
 	body := section(t, got, "## Qualitative ranking (judgement)")
-	if !strings.Contains(body, "| 1 | sqlx | 1.00 | 1.00 | 1.00 | 1.00 |") {
+	if !strings.Contains(body, "| 1 | sqlx | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 |") {
 		t.Errorf("sqlx should rank first with 1.00 everywhere:\n%s", body)
 	}
 }
@@ -274,6 +277,7 @@ func TestScoreQualitativeRejectsUnknownLevel(t *testing.T) {
 		{"flexibility", func(i *LibraryInfo) { i.Flexibility.Capabilities["optional_filters"] = "bogus" }, "bogus"},
 		{"ease of use", func(i *LibraryInfo) { i.EaseOfUse.Criteria["debugging"] = "bogus" }, "bogus"},
 		{"learning curve", func(i *LibraryInfo) { i.LearningCurve.Level = "bogus" }, "bogus"},
+		{"type safety", func(i *LibraryInfo) { i.TypeSafety = "bogus" }, "bogus"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -335,6 +339,7 @@ func TestRenderQualitativeRankingSharesRankOnEqualTotals(t *testing.T) {
 		if rb.Libraries[i].Name == "database_sql" {
 			rb.Libraries[i].Flexibility = ent.Flexibility
 			rb.Libraries[i].EaseOfUse = ent.EaseOfUse
+			rb.Libraries[i].TypeSafety = ent.TypeSafety
 			rb.Libraries[i].LearningCurve = ent.LearningCurve
 			rb.Libraries[i].Community = ent.Community
 		}
@@ -352,5 +357,28 @@ func TestRenderQualitativeRankingSharesRankOnEqualTotals(t *testing.T) {
 		if !strings.Contains(body, want) {
 			t.Errorf("section missing %q:\n%s", want, body)
 		}
+	}
+}
+
+func TestScoreQualitativeTypeSafetyWeight(t *testing.T) {
+	// Arrange: two libraries identical except for type safety.
+	community := Community{Stars: 1000, LastRelease: "2026-10-24", LastCommit: "2026-10-24"}
+	good := uniformInfo("native", "good", "gentle", community)
+	poor := good
+	poor.TypeSafety = "poor"
+
+	// Act
+	gotGood, errGood := scoreQualitative(good, checkedAt)
+	gotPoor, errPoor := scoreQualitative(poor, checkedAt)
+
+	// Assert
+	if errGood != nil || errPoor != nil {
+		t.Fatalf("scoreQualitative() errors = %v, %v", errGood, errPoor)
+	}
+	if diff := gotGood.total - gotPoor.total; math.Abs(diff-9.0/29) > scoreEpsilon {
+		t.Fatalf("type safety moved the total by %v, want %v", diff, 9.0/29)
+	}
+	if gotGood.ease != gotPoor.ease {
+		t.Fatalf("type safety changed ease of use: %v vs %v", gotGood.ease, gotPoor.ease)
 	}
 }
