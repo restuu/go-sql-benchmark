@@ -112,6 +112,7 @@
     {
       "name": "sqlx", "display": "sqlx", "module": "sqlx", "url": "https://github.com/jmoiron/sqlx",
       "label": "no updates since 2024", "version_used": "v1.4.0",
+      "honorable_mention": "No commit to the default branch since May 2024 and no release since April 2024, so it is not ranked against actively maintained libraries.",
       "pros": [
         "Thin layer over database/sql: the SQL stays hand-written and struct scanning is added.",
         "Every scenario is expressible with plain SQL."
@@ -613,6 +614,7 @@
       "module": "sqlboiler",
       "url": "https://github.com/aarondl/sqlboiler",
       "label": "maintenance mode",
+      "honorable_mention": "The project is in maintenance mode (no new features, only community bug fixes), so it is not ranked against actively developed libraries.",
       "version_used": "v4.19.7",
       "pros": [
         "Typed models, column constants and where helpers generated from the live schema; Update and Delete report rows affected.",

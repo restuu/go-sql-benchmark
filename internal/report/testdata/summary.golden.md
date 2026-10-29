@@ -220,7 +220,7 @@ Plain-language meanings of the terms used in this report. `REPORT.md` uses the s
 - **ORM** (object-relational mapper): you work with Go structs and the library writes the SQL for you.
 - **code generation**: a tool reads your database or SQL and writes Go code for you ahead of time (`make gen` regenerates it here).
 - **PostgreSQL**: the database used for every measurement (version 15).
-- **honorable mention**: a library that is measured and shown but not ranked against the others, because it only works with PostgreSQL (`pgx`, `pgx_pool`), so code written for it cannot move to another database.
+- **honorable mention**: a library that is measured and shown but not ranked against the others, because it only works with PostgreSQL (`pgx`, `pgx_pool`), so code written for it cannot move to another database, or because the project is in maintenance mode or has had no updates for years (`sqlx`, `sqlboiler`).
 
 ### Qualitative terms (judgements, not measurements)
 

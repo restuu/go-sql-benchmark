@@ -30,7 +30,7 @@ type LibraryInfo struct {
 	Label       string `json:"label"`
 	VersionUsed string `json:"version_used"`
 	// HonorableMention, when set, is the reason this library is measured and shown but not ranked
-	// against the others (for example a driver locked to one database).
+	// against the others (for example a driver locked to one database, or a library in maintenance mode).
 	HonorableMention string        `json:"honorable_mention,omitempty"`
 	Pros             []string      `json:"pros"`
 	Cons             []string      `json:"cons"`

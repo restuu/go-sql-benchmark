@@ -209,7 +209,7 @@ func writeTop(sb *strings.Builder, rb Rubric, r ranking) {
 	fmt.Fprintf(sb, "Score is the weighted geometric mean, over every ranked case, of each metric's ratio to database/sql (%s). 1.00 means the same as database/sql, 2.00 twice as much, 0.50 half; lower is better. Union is not scored, and a case needs a measured database/sql result to be scored.\n\n", weightsText(rb.Weights))
 	sb.WriteString("Libraries with equal scores share a rank.\n\n")
 	if len(r.mentions()) > 0 {
-		sb.WriteString("Only libraries that are not tied to one database are ranked; the others are under Honorable mention.\n\n")
+		sb.WriteString("Only libraries that are not tied to one database and are still actively developed are ranked; the others are under Honorable mention.\n\n")
 	}
 	top := r.top(topCount)
 	if len(top) == 0 {

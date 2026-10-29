@@ -2,7 +2,7 @@
 
 > **Read this first.** These results are not final. They come from one machine and one environment (listed under Environment below); another machine, operating system, Docker setup, Go version or library version, or even a busy moment on the same machine, can give different numbers, and this document may be updated after it was generated. Treat it as a brief summary of how the benchmark works and what it showed in the author's working environment, not as a verdict on any library. Run the benchmark yourself before relying on it; see "Run it yourself" below.
 
-Run started 2026-10-24T04:41:14Z (UTC). Numbers are only comparable on the same machine.
+Run started 2026-10-29T04:50:34Z (UTC). Numbers are only comparable on the same machine.
 
 Compares 15 libraries on three measures: **latency** (p95, the time within which 95% of calls finished), **memory** (B/op, bytes allocated per operation) and **CPU** (CPU ns/op, CPU time per operation). Each library runs 6 scenarios under 2 load profiles; a **case** is one scenario under one load profile, written scenario/profile, for example join/low. Union is measured but not scored (see Union below); the other 5 scenarios, 10 cases, make up every score.
 
@@ -28,50 +28,48 @@ Score is the weighted geometric mean, over every ranked case, of each metric's r
 
 Libraries with equal scores share a rank.
 
-Only libraries that are not tied to one database are ranked; the others are under Honorable mention.
+Only libraries that are not tied to one database and are still actively developed are ranked; the others are under Honorable mention.
 
 | Rank | Library | Score | Ranked cases |
 |---:|---|---:|---:|
 | 1 | database/sql | 1.00 | 10/10 |
-| 2 | sqlx | 1.09 | 10/10 |
-| 3 | sqlc | 1.10 | 10/10 |
-| 4 | sqlboiler | 1.25 | 10/10 |
-| 5 | beego | 1.31 | 10/10 |
+| 2 | sqlc | 1.09 | 10/10 |
+| 3 | beego | 1.36 | 10/10 |
+| 4 | rel | 1.43 | 10/10 |
+| 5 | pop | 1.69 | 10/10 |
 
 **database/sql**
 
 - the baseline: every ratio is 1.00 by definition
 
-**sqlx**
-
-- ratio to database/sql (geometric mean over ranked cases, 1.00 = same, lower is better): p95 1.01x, B/op 1.25x, CPU ns/op 1.03x
-- slowest case: delete/low (p95 1.20x database/sql)
-
 **sqlc**
 
-- ratio to database/sql (geometric mean over ranked cases, 1.00 = same, lower is better): p95 1.04x, B/op 1.25x, CPU ns/op 1.01x
-- slowest case: update/low (p95 1.35x database/sql)
-
-**sqlboiler**
-
-- ratio to database/sql (geometric mean over ranked cases, 1.00 = same, lower is better): p95 1.03x, B/op 1.74x, CPU ns/op 1.09x
-- slowest case: join/low (p95 1.17x database/sql)
+- ratio to database/sql (geometric mean over ranked cases, 1.00 = same, lower is better): p95 1.03x, B/op 1.24x, CPU ns/op 1.01x
+- slowest case: insert/low (p95 1.15x database/sql)
 
 **beego**
 
-- ratio to database/sql (geometric mean over ranked cases, 1.00 = same, lower is better): p95 0.98x, B/op 2.36x, CPU ns/op 0.97x
-- slowest case: join/low (p95 1.18x database/sql)
+- ratio to database/sql (geometric mean over ranked cases, 1.00 = same, lower is better): p95 1.05x, B/op 2.35x, CPU ns/op 1.02x
+- slowest case: join/low (p95 1.27x database/sql)
+
+**rel**
+
+- ratio to database/sql (geometric mean over ranked cases, 1.00 = same, lower is better): p95 1.00x, B/op 2.79x, CPU ns/op 1.05x
+- slowest case: update/low (p95 1.14x database/sql)
+
+**pop**
+
+- ratio to database/sql (geometric mean over ranked cases, 1.00 = same, lower is better): p95 1.07x, B/op 3.69x, CPU ns/op 1.23x
+- slowest case: delete/low (p95 1.26x database/sql)
 
 Also measured:
 
-- rel: score 1.49, ranked cases 10/10
-- pop: score 1.73, ranked cases 10/10
-- ent: score 1.79, ranked cases 10/10
-- go-jet: score 1.91, ranked cases 10/10
-- xorm: score 1.99, ranked cases 10/10
-- gorm: score 2.02, ranked cases 10/10
-- bun: score 2.16, ranked cases 10/10
-- gorm/gen: score 2.25, ranked cases 10/10
+- ent: score 1.74, ranked cases 10/10
+- go-jet: score 1.87, ranked cases 10/10
+- xorm: score 1.97, ranked cases 10/10
+- gorm: score 1.99, ranked cases 10/10
+- bun: score 2.15, ranked cases 10/10
+- gorm/gen: score 2.20, ranked cases 10/10
 
 ## Honorable mention
 
@@ -79,8 +77,10 @@ Measured and shown in every table of the detailed report, but kept out of the ra
 
 | Library | Score | Ranked cases | Why not ranked |
 |---|---:|---:|---|
-| pgx_pool | 0.85 | 10/10 | pgx is a PostgreSQL-only driver API, so code written against it cannot move to another database. |
-| pgx | 0.91 | 10/10 | pgx is a PostgreSQL-only driver API, so code written against it cannot move to another database. |
+| pgx_pool | 0.83 | 10/10 | pgx is a PostgreSQL-only driver API, so code written against it cannot move to another database. |
+| pgx | 0.89 | 10/10 | pgx is a PostgreSQL-only driver API, so code written against it cannot move to another database. |
+| sqlx | 1.10 | 10/10 | No commit to the default branch since May 2024 and no release since April 2024, so it is not ranked against actively maintained libraries. |
+| sqlboiler | 1.26 | 10/10 | The project is in maintenance mode (no new features, only community bug fixes), so it is not ranked against actively developed libraries. |
 
 ## Feature matrix
 
@@ -91,8 +91,8 @@ Which scenarios each library expresses with its own query API. `n/a` means it ne
 | pgx_pool | native | native | native | native | native | native |
 | pgx | native | native | native | native | native | native |
 | database/sql | native | native | native | native | native | native |
-| sqlx | native | native | native | native | native | native |
 | sqlc | native | native | native | native | native | native |
+| sqlx | native | native | native | native | native | native |
 | sqlboiler | native | native | native | native | native | n/a |
 | beego | native | native | native | native | native [1] | n/a |
 | rel | native | native | native | native | native | n/a |
@@ -115,13 +115,13 @@ UNION is measured for every library that can express it natively but is not part
 | Rank | Library | Score | Ranked cases | p95 | B/op | CPU ns/op |
 |---:|---|---:|---:|---:|---:|---:|
 | 1 | database/sql | 1.00 | 2/2 | 1.00x | 1.00x | 1.00x |
-| 2 | sqlc | 1.48 | 2/2 | 1.05x | 2.76x | 1.12x |
-| 3 | sqlx | 1.55 | 2/2 | 1.05x | 2.99x | 1.20x |
-| 4 | bun | 1.84 | 2/2 | 1.18x | 3.83x | 1.37x |
-| 5 | xorm | 2.48 | 2/2 | 1.23x | 7.43x | 1.68x |
-| 6 | go-jet | 2.94 | 2/2 | 1.42x | 9.17x | 1.95x |
-| - | pgx_pool | 0.87 | 2/2 | 1.03x | 0.87x | 0.73x |
-| - | pgx | 1.42 | 2/2 | 1.22x | 2.76x | 0.86x |
+| 2 | sqlc | 1.51 | 2/2 | 1.11x | 2.78x | 1.11x |
+| 3 | bun | 1.83 | 2/2 | 1.25x | 3.85x | 1.28x |
+| 4 | xorm | 2.41 | 2/2 | 1.17x | 7.46x | 1.62x |
+| 5 | go-jet | 2.80 | 2/2 | 1.29x | 9.21x | 1.84x |
+| - | pgx_pool | 0.86 | 2/2 | 1.05x | 0.88x | 0.70x |
+| - | pgx | 1.36 | 2/2 | 1.06x | 2.77x | 0.86x |
+| - | sqlx | 1.54 | 2/2 | 1.03x | 3.00x | 1.18x |
 
 No ranked union result: beego, ent, gorm, gorm/gen, pop, rel, sqlboiler.
 
@@ -206,8 +206,8 @@ before and after. Do not change any level in report/rubric.json unless I ask; th
 | pgx_pool | v5.11.0 | - | v5.11.0 | <https://github.com/jackc/pgx> |
 | pgx | v5.11.0 | - | v5.11.0 | <https://github.com/jackc/pgx> |
 | database/sql | - | - | standard library | <https://pkg.go.dev/database/sql> |
-| sqlx | v1.4.0 | no updates since 2024 | v1.4.0 | <https://github.com/jmoiron/sqlx> |
 | sqlc | - | - | generator v1.31.1, pinned in tools/go.mod | <https://github.com/sqlc-dev/sqlc> |
+| sqlx | v1.4.0 | no updates since 2024 | v1.4.0 | <https://github.com/jmoiron/sqlx> |
 | sqlboiler | v4.19.7 | maintenance mode | v4.19.7 | <https://github.com/aarondl/sqlboiler> |
 | beego | v2.3.10 | - | v2.3.10 | <https://github.com/beego/beego> |
 | rel | v0.43.0 | - | v0.43.0 | <https://github.com/go-rel/rel> |
@@ -221,7 +221,7 @@ before and after. Do not change any level in report/rubric.json unless I ask; th
 
 ## Run configuration
 
-Repeats per case: 3 (the median is reported). Seed: 1792816868404869000.
+Repeats per case: 3 (the median is reported). Seed: 1793249429235515000.
 
 | Profile | Workers | Pacing | Warm-up | Window | DELETE ids |
 |---|---:|---:|---:|---:|---:|
@@ -299,7 +299,7 @@ Plain-language meanings of the terms used in this report. `REPORT.md` uses the s
 - **ORM** (object-relational mapper): you work with Go structs and the library writes the SQL for you.
 - **code generation**: a tool reads your database or SQL and writes Go code for you ahead of time (`make gen` regenerates it here).
 - **PostgreSQL**: the database used for every measurement (version 15).
-- **honorable mention**: a library that is measured and shown but not ranked against the others, because it only works with PostgreSQL (`pgx`, `pgx_pool`), so code written for it cannot move to another database.
+- **honorable mention**: a library that is measured and shown but not ranked against the others, because it only works with PostgreSQL (`pgx`, `pgx_pool`), so code written for it cannot move to another database, or because the project is in maintenance mode or has had no updates for years (`sqlx`, `sqlboiler`).
 
 ### Qualitative terms (judgements, not measurements)
 
